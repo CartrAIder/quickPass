@@ -8,9 +8,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "carts")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Cart {
 
     @Id
@@ -24,31 +30,9 @@ public class Cart {
     @Column(nullable = false)
     private CartStatus status;
 
-    protected Cart() {
-    }
-
+    @Builder
     public Cart(String qrCode, CartStatus status) {
         this.qrCode = qrCode;
-        this.status = status;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getQrCode() {
-        return qrCode;
-    }
-
-    public void setQrCode(String qrCode) {
-        this.qrCode = qrCode;
-    }
-
-    public CartStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(CartStatus status) {
         this.status = status;
     }
 }
