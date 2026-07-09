@@ -10,9 +10,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "order_items")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OrderItem {
 
     @Id
@@ -33,41 +39,11 @@ public class OrderItem {
     @Column(nullable = false)
     private Integer price;
 
-    protected OrderItem() {
-    }
-
+    @Builder
     public OrderItem(Order order, Product product, Integer quantity, Integer price) {
         this.order = order;
         this.product = product;
         this.quantity = quantity;
-        this.price = price;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Order getOrder() {
-        return order;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
-
-    public Integer getPrice() {
-        return price;
-    }
-
-    public void setPrice(Integer price) {
         this.price = price;
     }
 }

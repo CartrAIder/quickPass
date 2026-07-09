@@ -13,11 +13,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "orders")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Order {
 
     @Id
@@ -42,49 +48,11 @@ public class Order {
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
-    protected Order() {
-    }
-
+    @Builder
     public Order(User user, Cart cart, Integer totalPrice, OrderStatus status) {
         this.user = user;
         this.cart = cart;
         this.totalPrice = totalPrice;
         this.status = status;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public Cart getCart() {
-        return cart;
-    }
-
-    public Integer getTotalPrice() {
-        return totalPrice;
-    }
-
-    public void setTotalPrice(Integer totalPrice) {
-        this.totalPrice = totalPrice;
-    }
-
-    public OrderStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(OrderStatus status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getPaidAt() {
-        return paidAt;
-    }
-
-    public void setPaidAt(LocalDateTime paidAt) {
-        this.paidAt = paidAt;
     }
 }

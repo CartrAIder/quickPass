@@ -8,9 +8,15 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "products")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Product {
 
     @Id
@@ -33,58 +39,12 @@ public class Product {
     @Column(nullable = false)
     private ProductStatus status;
 
-    protected Product() {
-    }
-
+    @Builder
     public Product(String barcode, String name, Integer price, String category, ProductStatus status) {
         this.barcode = barcode;
         this.name = name;
         this.price = price;
         this.category = category;
-        this.status = status;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getBarcode() {
-        return barcode;
-    }
-
-    public void setBarcode(String barcode) {
-        this.barcode = barcode;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Integer getPrice() {
-        return price;
-    }
-
-    public void setPrice(Integer price) {
-        this.price = price;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
-    public ProductStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ProductStatus status) {
         this.status = status;
     }
 }
