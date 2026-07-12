@@ -38,7 +38,7 @@ public class AuthService {
     // 토큰 재발급 메서드 (Refresh Token Rotation)
     @Transactional(readOnly = true)
     public AuthTokens reissue(String refreshToken) {
-        // 유효하고, 타입이 refresh인 토큰만 허용 (액세스 토큰으로 재발급 시도 차단)
+        // 유효하고, 타입이 refresh인 토큰만 허용
         if (!jwtTokenProvider.validateToken(refreshToken) || !jwtTokenProvider.isRefreshToken(refreshToken)) {
             throw new InvalidTokenException();
         }
@@ -48,7 +48,7 @@ public class AuthService {
         String storedToken = refreshTokenRepository.findByUserId(userId)
                 .orElseThrow(InvalidTokenException::new);
 
-        // 쿠키의 토큰과 저장된 토큰이 다르면 탈취 가능성 → 저장된 토큰 무효화
+        // 쿠키의 토큰과 저장된 토큰이 다르면 탈취 가능성 있음 → 저장된 토큰 무효화
         if (!storedToken.equals(refreshToken)) {
             refreshTokenRepository.deleteByUserId(userId);
             throw new InvalidTokenException();
@@ -57,7 +57,7 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(InvalidTokenException::new);
 
-        // 기존 리프레시 토큰을 새 토큰으로 교체(회전)하여 재발급
+        // 기존 리프레시 토큰을 새 토큰으로 교체하여 재발급
         return issueTokens(user);
     }
 
@@ -71,7 +71,7 @@ public class AuthService {
         refreshTokenRepository.deleteByUserId(userId);
     }
 
-    // 토큰 발급 + 리프레시 토큰 저장(기존 값 덮어쓰기 = 회전)
+    // 토큰 발급 및 리프레시 토큰 저장 메서드
     private AuthTokens issueTokens(User user) {
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
