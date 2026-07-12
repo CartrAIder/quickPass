@@ -27,8 +27,20 @@ jwt:
   access-token-validity: 1800000    # 30분 (ms)
   refresh-token-validity: 1209600000  # 14일 (ms)
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html            # Swagger UI 접속 경로
+    operations-sorter: method         # HTTP 메서드 기준 정렬
+    tags-sorter: alpha                # 태그(컨트롤러) 알파벳 정렬
+  api-docs:
+    path: /v3/api-docs                # OpenAPI 스펙(JSON) 경로
+
 mqtt:
   broker-url: tcp://localhost:1883    # Mosquitto 브로커 주소
   client-id: quickpass-server         # 서버의 MQTT 클라이언트 ID (연결마다 고유해야 함)
-  scan-topic: quickpass/cart/+/scan   # 카트 바코드 스캔 구독 토픽 (+ = cartId 와일드카드)
+  scan-topic: quickpass/cart/+/scan   # 카트 바코드 스캔 구독 토픽 (+ = qrCode 와일드카드)
   qos: 1                              # 0=최대1회, 1=최소1회(중복가능), 2=정확히1회
+
+cart:
+  session:
+    ttl: 2h    # 카트 점유/아이템 세션의 유휴 타임아웃 (스캔/연동 시마다 초기화)

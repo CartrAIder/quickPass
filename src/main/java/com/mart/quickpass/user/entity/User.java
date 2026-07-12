@@ -23,24 +23,24 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; // 기본키
 
     @Column(nullable = false, unique = true)
-    private String email;
+    private String email; // 이메일
 
     @Column(nullable = false)
-    private String password;
+    private String password; // 비밀번호
 
     @Column(nullable = false)
-    private String name;
+    private String name; // 이름
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt; // 생성일시
 
     @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    private LocalDateTime updatedAt; // 정보 수정일시
 
     @Builder
     public User(String email, String password, String name) {

@@ -20,6 +20,7 @@ public class UserService {
     // 회원가입 메서드
     @Transactional
     public SignUpResponse signUp(SignUpRequest request) {
+        // 이메일 중복 확인
         if (userRepository.existsByEmail(request.email())) {
             throw new DuplicateEmailException(request.email());
         }

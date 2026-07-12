@@ -30,6 +30,36 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(e.getMessage()));
     }
 
+    @ExceptionHandler(CartNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCartNotFound(CartNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(e.getMessage()));
+    }
+
+    @ExceptionHandler(CartAlreadyInUseException.class)
+    public ResponseEntity<ErrorResponse> handleCartAlreadyInUse(CartAlreadyInUseException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(e.getMessage()));
+    }
+
+    @ExceptionHandler(CartSessionNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCartSessionNotFound(CartSessionNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(e.getMessage()));
+    }
+
+    @ExceptionHandler(CartAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleCartAccessDenied(CartAccessDeniedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(e.getMessage()));
+    }
+
+    @ExceptionHandler(CartItemNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleCartItemNotFound(CartItemNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(e.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleInvalidArgument(MethodArgumentNotValidException e) {
         List<String> details = e.getBindingResult().getFieldErrors().stream()

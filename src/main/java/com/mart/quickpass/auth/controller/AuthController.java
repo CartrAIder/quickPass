@@ -75,7 +75,7 @@ public class AuthController {
                 .build();
     }
 
-    // 로그아웃 시 리프레시 토큰 쿠키를 즉시 만료시킨다
+    // 로그아웃 시 리프레시 토큰 쿠키를 즉시 만료
     private ResponseCookie expireRefreshTokenCookie() {
         return ResponseCookie.from(JwtConstants.REFRESH_TOKEN_COOKIE_NAME, "")
                 .httpOnly(false) // 배포 시 true로 변경 필요

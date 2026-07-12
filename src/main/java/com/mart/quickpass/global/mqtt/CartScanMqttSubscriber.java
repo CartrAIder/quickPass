@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CartScanMqttSubscriber {
 
-    private static final int CART_ID_TOPIC_INDEX = 2; // quickpass/cart/{cartId}/scan, 카트 번호가 2번째
+    private static final int QR_CODE_TOPIC_INDEX = 2; // quickpass/cart/{qrCode}/scan, qrCode가 2번째
 
     private final CartScanService cartScanService;
     private final ObjectMapper objectMapper;
@@ -33,23 +33,27 @@ public class CartScanMqttSubscriber {
 
         // 잘못된 메시지 하나가 수신 스레드를 죽이지 않도록 처리
         try {
-            Long cartId = extractCartId(topic);
+            String qrCode = extractQrCode(topic);
             CartScanMessage scan = objectMapper.readValue(payload, CartScanMessage.class);
-            cartScanService.handleScan(cartId, scan);
+            cartScanService.handleScan(qrCode, scan);
         } catch (Exception e) {
             log.warn("[Mqtt] 스캔 메시지 처리 실패 - topic={}, payload={}", topic, payload, e);
         }
     }
 
-    // cartId 추출 메서드
-    private Long extractCartId(String topic) {
+    // qrCode 추출 메서드
+    private String extractQrCode(String topic) {
         if (topic == null) {
             throw new IllegalArgumentException("MQTT 토픽이 비어 있습니다");
         }
         String[] segments = topic.split("/");
-        if (segments.length <= CART_ID_TOPIC_INDEX) {
+        if (segments.length <= QR_CODE_TOPIC_INDEX) {
             throw new IllegalArgumentException("예상과 다른 토픽 형식: " + topic);
         }
-        return Long.parseLong(segments[CART_ID_TOPIC_INDEX]);
+        String qrCode = segments[QR_CODE_TOPIC_INDEX];
+        if (qrCode.isBlank()) {
+            throw new IllegalArgumentException("토픽에 qrCode가 없습니다: " + topic);
+        }
+        return qrCode;
     }
 }

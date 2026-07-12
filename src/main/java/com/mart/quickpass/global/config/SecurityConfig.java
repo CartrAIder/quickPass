@@ -33,7 +33,11 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/reissue",
             "/api/auth/logout",
-            "/error"
+            "/error",
+            // Swagger UI / OpenAPI 문서
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**"
     };
 
     // 비밀번호 암호화

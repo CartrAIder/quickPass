@@ -35,4 +35,12 @@ public class Cart {
         this.qrCode = qrCode;
         this.status = status;
     }
+
+    public void markInUse() {
+        this.status = CartStatus.IN_USE;
+    }
+
+    public void markWaiting() {
+        this.status = CartStatus.WAITING;
+    }
 }
