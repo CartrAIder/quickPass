@@ -8,6 +8,8 @@ import org.springframework.stereotype.Repository;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -28,6 +30,17 @@ public class CartItemsRepository {
             return Optional.empty();
         }
         return Optional.of(objectMapper.readValue(value, CartItem.class));
+    }
+
+    /**
+     * 장바구니에 담긴 모든 아이템을 {@code barcode -> CartItem} 형태로 반환한다 (비어 있으면 빈 맵).
+     * 스냅샷 전송(SSE) 용도로 한 번에 전체를 읽는다.
+     */
+    public Map<String, CartItem> findAllItems(String qrCode) {
+        Map<String, String> raw = hashOps().entries(key(qrCode));
+        Map<String, CartItem> items = new LinkedHashMap<>();
+        raw.forEach((barcode, value) -> items.put(barcode, objectMapper.readValue(value, CartItem.class)));
+        return items;
     }
 
     public void saveItem(String qrCode, String barcode, CartItem item) {

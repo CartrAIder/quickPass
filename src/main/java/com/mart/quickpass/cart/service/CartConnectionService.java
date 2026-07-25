@@ -4,23 +4,21 @@ import com.mart.quickpass.cart.dto.CartConnectRequest;
 import com.mart.quickpass.cart.dto.CartConnectResponse;
 import com.mart.quickpass.cart.dto.CartSession;
 import com.mart.quickpass.cart.entity.Cart;
+import com.mart.quickpass.cart.event.CartChangeType;
+import com.mart.quickpass.cart.event.CartChangedEvent;
 import com.mart.quickpass.cart.repository.CartItemsRepository;
 import com.mart.quickpass.cart.repository.CartRepository;
 import com.mart.quickpass.cart.repository.CartSessionRepository;
+import com.mart.quickpass.cart.repository.CartVersionRepository;
 import com.mart.quickpass.global.config.CartSessionProperties;
 import com.mart.quickpass.global.exception.CartAlreadyInUseException;
 import com.mart.quickpass.global.exception.CartNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 카트 점유(연결)와 반납(해제)을 담당하는 유스케이스.
- *
- * <p>점유 여부의 실제 판단 기준은 Redis 세션이다. {@link CartSessionRepository#claim}이
- * {@code SETNX}로 원자적으로 동작하므로, 동시에 같은 카트를 스캔해도 단 한 요청만 성공한다.
- * DB의 {@link Cart#getStatus()}는 조회/표시용 보조 필드로 함께 갱신한다.
- */
+// 카트 연결 & 해제 담당 서비스 로직
 @Service
 @RequiredArgsConstructor
 public class CartConnectionService {
@@ -28,39 +26,56 @@ public class CartConnectionService {
     private final CartRepository cartRepository;
     private final CartSessionRepository cartSessionRepository;
     private final CartItemsRepository cartItemsRepository;
+    private final CartVersionRepository cartVersionRepository;
     private final CartSessionProperties cartSessionProperties;
     private final CartSessionGuard cartSessionGuard;
+    private final ApplicationEventPublisher eventPublisher;
 
+    // 카트 연결 메서드
     @Transactional
     public CartConnectResponse connect(Long userId, CartConnectRequest request) {
         String qrCode = request.qrCode();
 
+        // 카트 탐색
         Cart cart = cartRepository.findByQrCode(qrCode)
                 .orElseThrow(() -> new CartNotFoundException(qrCode));
 
+        // 카트 세션(redis) 생성
         boolean claimed = cartSessionRepository.claim(qrCode, CartSession.start(userId), cartSessionProperties.ttl());
         if (!claimed) {
             throw new CartAlreadyInUseException(qrCode);
         }
 
+        // 카트의 상태를 사용중(USING)으로 수정
         cart.markInUse();
+
+        // 연동 직후 빈 장바구니를 앱으로 밀어 화면을 동기화한다.
+        long version = cartVersionRepository.increment(qrCode);
+        cartVersionRepository.refreshTtl(qrCode, cartSessionProperties.ttl());
+        eventPublisher.publishEvent(
+                CartChangedEvent.of(userId, qrCode, CartChangeType.INITIALIZED, version));
 
         return CartConnectResponse.from(cart);
     }
 
-    /**
-     * 사용자가 직접 카트를 반납한다 ("장보기 포기"). 담겨있던 아이템을 모두 비우고,
-     * 점유 세션을 삭제하며, 카트 상태를 WAITING으로 되돌려 다른 사용자가 다시 점유할 수 있게 한다.
-     */
+    // 카트 반납 메서드
     @Transactional
     public void disconnect(Long userId, String qrCode) {
+        // 유저 일치 여부 확인
         cartSessionGuard.requireOwnedSession(userId, qrCode);
 
+        // 카트 탐색 후 redis의 정보 지우기
         Cart cart = cartRepository.findByQrCode(qrCode)
                 .orElseThrow(() -> new CartNotFoundException(qrCode));
 
         cartItemsRepository.deleteAll(qrCode);
         cartSessionRepository.deleteByQrCode(qrCode);
         cart.markWaiting();
+
+        // 세션 종료를 앱에 알린다
+        long version = cartVersionRepository.increment(qrCode);
+        cartVersionRepository.refreshTtl(qrCode, cartSessionProperties.ttl());
+        eventPublisher.publishEvent(
+                CartChangedEvent.of(userId, qrCode, CartChangeType.CLOSED, version));
     }
 }

@@ -21,14 +21,14 @@ public class Cart {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; // 기본키
 
     @Column(name = "qr_code", nullable = false, unique = true)
-    private String qrCode;
+    private String qrCode; // qrcode
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private CartStatus status;
+    private CartStatus status; // 카트 상태(대기중, 사용중)
 
     @Builder
     public Cart(String qrCode, CartStatus status) {

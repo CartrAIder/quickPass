@@ -1,6 +1,7 @@
 package com.mart.quickpass.global.security.jwt;
 
 import com.mart.quickpass.global.config.JwtProperties;
+import com.mart.quickpass.user.entity.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -19,6 +20,7 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private static final String CLAIM_EMAIL = "email";
+    private static final String CLAIM_ROLE = "role";
     private static final String CLAIM_TYPE = "type";
 
     public static final String TYPE_ACCESS = "access";
@@ -32,12 +34,12 @@ public class JwtTokenProvider {
         this.secretKey = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createAccessToken(Long userId, String email) {
-        return createToken(userId, email, TYPE_ACCESS, jwtProperties.accessTokenValidity());
+    public String createAccessToken(Long userId, String email, UserRole role) {
+        return createToken(userId, email, role, TYPE_ACCESS, jwtProperties.accessTokenValidity());
     }
 
     public String createRefreshToken(Long userId) {
-        return createToken(userId, null, TYPE_REFRESH, jwtProperties.refreshTokenValidity());
+        return createToken(userId, null, null, TYPE_REFRESH, jwtProperties.refreshTokenValidity());
     }
 
     public boolean validateToken(String token) {
@@ -68,7 +70,7 @@ public class JwtTokenProvider {
         return TYPE_REFRESH.equals(parseClaims(token).get(CLAIM_TYPE, String.class));
     }
 
-    private String createToken(Long userId, String email, String type, long validityMillis) {
+    private String createToken(Long userId, String email, UserRole role, String type, long validityMillis) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + validityMillis);
 
@@ -81,6 +83,9 @@ public class JwtTokenProvider {
 
         if (email != null) {
             builder.claim(CLAIM_EMAIL, email);
+        }
+        if (role != null) {
+            builder.claim(CLAIM_ROLE, role.name());
         }
 
         return builder.compact();

@@ -1,6 +1,7 @@
 package com.mart.quickpass.cart.dto;
 
 public record CartItemResponse(
+
         String barcode,
         String name,
         int price,

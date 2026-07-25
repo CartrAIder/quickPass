@@ -25,9 +25,11 @@ public class AuthService {
     // 로그인 메서드
     @Transactional(readOnly = true)
     public AuthTokens login(LoginRequest request) {
+        // 이메일 기반 유저 탐색
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(InvalidCredentialsException::new);
 
+        // 비밀번호 일치 확인
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new InvalidCredentialsException();
         }
@@ -35,8 +37,7 @@ public class AuthService {
         return issueTokens(user);
     }
 
-    // 토큰 재발급 메서드 (Refresh Token Rotation)
-    @Transactional(readOnly = true)
+    // 토큰 재발급 메서드 (엑세스/리프레쉬 대상)
     public AuthTokens reissue(String refreshToken) {
         // 유효하고, 타입이 refresh인 토큰만 허용
         if (!jwtTokenProvider.validateToken(refreshToken) || !jwtTokenProvider.isRefreshToken(refreshToken)) {
@@ -73,7 +74,7 @@ public class AuthService {
 
     // 토큰 발급 및 리프레시 토큰 저장 메서드
     private AuthTokens issueTokens(User user) {
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail());
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
         refreshTokenRepository.save(user.getId(), refreshToken);

@@ -33,6 +33,8 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/reissue",
             "/api/auth/logout",
+            // SSE 구독은 액세스 토큰 대신 단명 티켓으로 인증한다(컨트롤러에서 검증). 티켓 발급(/sse-ticket)은 인증 필요.
+            "/api/carts/subscribe",
             "/error",
             // Swagger UI / OpenAPI 문서
             "/swagger-ui/**",

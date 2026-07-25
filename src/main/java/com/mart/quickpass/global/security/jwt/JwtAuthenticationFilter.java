@@ -67,7 +67,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
-    // "Authorization: Bearer <token>" 헤더에서 토큰만 추출
+    // "Authorization: Bearer <token>" 헤더에서 토큰만 추출한다.
+    // (SSE 구독은 액세스 토큰을 URL에 싣지 않고 단명 티켓으로 인증하므로, 여기서 쿼리 파라미터를 다루지 않는다.)
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader(JwtConstants.AUTHORIZATION_HEADER);
 
