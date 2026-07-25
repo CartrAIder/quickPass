@@ -2,6 +2,8 @@ package com.mart.quickpass.user.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -34,6 +36,10 @@ public class User {
     @Column(nullable = false)
     private String name; // 이름
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserRole role; // 권한
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
@@ -43,9 +49,10 @@ public class User {
     private LocalDateTime updatedAt; // 정보 수정일시
 
     @Builder
-    public User(String email, String password, String name) {
+    public User(String email, String password, String name, UserRole role) {
         this.email = email;
         this.password = password;
         this.name = name;
+        this.role = role;
     }
 }

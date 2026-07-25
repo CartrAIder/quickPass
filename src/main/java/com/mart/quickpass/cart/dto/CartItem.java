@@ -1,9 +1,8 @@
 package com.mart.quickpass.cart.dto;
 
-/**
- * Redis Hash({@code cart:items:{qrCode}})의 필드({@code barcode}) 값.
- */
+
 public record CartItem(
+        // 상품 dto
         String name,
         int price,
         long quantity

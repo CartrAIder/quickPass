@@ -7,9 +7,8 @@ import com.mart.quickpass.global.exception.CartSessionNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * 요청자가 해당 카트의 현재 점유자(Redis 세션의 userId)와 일치하는지 검증한다.
- */
+
+// 요청자가 해당 카트의 점유자와 일치하는지 검증
 @Component
 @RequiredArgsConstructor
 class CartSessionGuard {
@@ -20,6 +19,7 @@ class CartSessionGuard {
         CartSession session = cartSessionRepository.findByQrCode(qrCode)
                 .orElseThrow(() -> new CartSessionNotFoundException(qrCode));
 
+        // 유저 일치 여부 검증
         if (!session.userId().equals(userId)) {
             throw new CartAccessDeniedException();
         }

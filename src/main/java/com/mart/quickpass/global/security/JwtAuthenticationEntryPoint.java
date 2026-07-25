@@ -43,7 +43,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private ErrorResponse buildBody(String errorCode) {
         if (JwtConstants.ERROR_EXPIRED_TOKEN.equals(errorCode)) {
-            return ErrorResponse.of(errorCode, "액세스 토큰이 만료되었습니다. 토큰을 재발급 받으세요.");
+            return ErrorResponse.of(errorCode, "로그아웃 되었습니다. 재로그인 하세요");
         }
         if (JwtConstants.ERROR_INVALID_TOKEN.equals(errorCode)) {
             return ErrorResponse.of(errorCode, "유효하지 않은 토큰입니다.");

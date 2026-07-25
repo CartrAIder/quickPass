@@ -30,6 +30,7 @@ public class AuthController {
     // 로그인 컨트롤러
     @PostMapping("/login")
     public ResponseEntity<Void> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+        // 로그인 후 토큰 반환
         AuthTokens tokens = authService.login(request);
         setTokenResponse(response, tokens);
 

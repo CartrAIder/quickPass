@@ -2,10 +2,14 @@ spring:
   application:
     name: quickPass
 
+  # .env 파일 내용 조회
+  config:
+    import: optional:file:.env[.properties]
+
   datasource:
-    url: jdbc:mysql://localhost:3306/quickpass?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: quickpass
-    password: quickpass
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -19,11 +23,11 @@ spring:
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
 
 jwt:
-  secret: quickpass-jwt-secret-key-for-hmac-sha256-signature-please-change-in-production-2026
+  secret: ${JWT_SECRET}
   access-token-validity: 1800000    # 30분 (ms)
   refresh-token-validity: 1209600000  # 14일 (ms)
 
@@ -36,8 +40,8 @@ springdoc:
     path: /v3/api-docs                # OpenAPI 스펙(JSON) 경로
 
 mqtt:
-  broker-url: tcp://localhost:1883    # Mosquitto 브로커 주소
-  client-id: quickpass-server         # 서버의 MQTT 클라이언트 ID (연결마다 고유해야 함)
+  broker-url: ${MQTT_BROKER_URL}      # Mosquitto 브로커 주소
+  client-id: ${MQTT_CLIENT_ID}        # 서버의 MQTT 클라이언트 ID (연결마다 고유해야 함)
   scan-topic: quickpass/cart/+/scan   # 카트 바코드 스캔 구독 토픽 (+ = qrCode 와일드카드)
   qos: 1                              # 0=최대1회, 1=최소1회(중복가능), 2=정확히1회
 

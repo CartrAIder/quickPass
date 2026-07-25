@@ -1,4 +1,5 @@
 HELP.md
+*.md
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -38,8 +39,17 @@ out/
 
 ### Agents ###
 .agents/
+.codex/
 workspace/
 
 ### cart-simulator (python) - 로컬 개발 도구, 커밋 제외 ###
 tools/cart-simulator/
 __pycache__/
+
+### Local environment and secrets ###
+.env
+.env.*
+*.log
+.DS_Store
+*.pem
+*.key

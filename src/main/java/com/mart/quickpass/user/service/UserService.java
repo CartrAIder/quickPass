@@ -4,6 +4,7 @@ import com.mart.quickpass.global.exception.DuplicateEmailException;
 import com.mart.quickpass.user.dto.SignUpRequest;
 import com.mart.quickpass.user.dto.SignUpResponse;
 import com.mart.quickpass.user.entity.User;
+import com.mart.quickpass.user.entity.UserRole;
 import com.mart.quickpass.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +30,7 @@ public class UserService {
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .name(request.name())
+                .role(UserRole.USER)
                 .build();
 
         User savedUser = userRepository.save(user);
