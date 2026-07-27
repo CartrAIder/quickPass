@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>결제 실패</title></head>
+<body><main><h1>결제에 실패했습니다</h1><p id="message" role="alert"></p></main>
+<script>
+  const p = new URLSearchParams(location.search);
+  document.querySelector('#message').textContent = p.get('message') || '네트워크 상태를 확인한 뒤 다시 시도해 주세요.';
+</script>
+</body>
+</html>

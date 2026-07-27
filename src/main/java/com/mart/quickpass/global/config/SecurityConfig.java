@@ -35,6 +35,9 @@ public class SecurityConfig {
             "/api/auth/logout",
             // SSE 구독은 액세스 토큰 대신 단명 티켓으로 인증한다(컨트롤러에서 검증). 티켓 발급(/sse-ticket)은 인증 필요.
             "/api/carts/subscribe",
+            // 토스 결제 완료 후 successUrl/failUrl로 브라우저가 직접 이동한다.
+            // 승인 API 자체는 아래 예외에 포함되지 않으므로 JWT 인증이 계속 필요하다.
+            "/payments/**",
             "/error",
             // Swagger UI / OpenAPI 문서
             "/swagger-ui/**",
