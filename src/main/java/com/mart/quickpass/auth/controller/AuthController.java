@@ -2,7 +2,9 @@ package com.mart.quickpass.auth.controller;
 
 import com.mart.quickpass.auth.dto.AuthTokens;
 import com.mart.quickpass.auth.dto.LoginRequest;
+import com.mart.quickpass.auth.dto.LoginResponse;
 import com.mart.quickpass.auth.service.AuthService;
+import com.mart.quickpass.global.config.AuthCookieProperties;
 import com.mart.quickpass.global.config.JwtProperties;
 import com.mart.quickpass.global.security.jwt.JwtConstants;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,15 +28,16 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtProperties jwtProperties;
+    private final AuthCookieProperties authCookieProperties;
 
     // 로그인 컨트롤러
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
         // 로그인 후 토큰 반환
         AuthTokens tokens = authService.login(request);
         setTokenResponse(response, tokens);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(new LoginResponse(tokens.name()));
     }
 
     // 토큰 재발급 컨트롤러 - 쿠키의 리프레시 토큰으로 Access/Refresh 토큰 모두 재발급
@@ -59,7 +62,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    // Access Token은 헤더, Refresh Token은 쿠키로 응답에 실어준다
+    // 웹: Access Token은 헤더, Refresh Token은 HttpOnly 쿠키로만 전달한다.
     private void setTokenResponse(HttpServletResponse response, AuthTokens tokens) {
         response.setHeader(HttpHeaders.AUTHORIZATION, JwtConstants.TOKEN_PREFIX + tokens.accessToken());
         response.addHeader(HttpHeaders.SET_COOKIE, buildRefreshTokenCookie(tokens.refreshToken()).toString());
@@ -68,8 +71,8 @@ public class AuthController {
     // 리프레시 토큰 보안 설정
     private ResponseCookie buildRefreshTokenCookie(String refreshToken) {
         return ResponseCookie.from(JwtConstants.REFRESH_TOKEN_COOKIE_NAME, refreshToken)
-                .httpOnly(false) // 배포 시 true로 변경 필요
-                .secure(true)
+                .httpOnly(true)
+                .secure(authCookieProperties.secure())
                 .sameSite("Strict")
                 .path("/")
                 .maxAge(Duration.ofMillis(jwtProperties.refreshTokenValidity()))
@@ -79,8 +82,8 @@ public class AuthController {
     // 로그아웃 시 리프레시 토큰 쿠키를 즉시 만료
     private ResponseCookie expireRefreshTokenCookie() {
         return ResponseCookie.from(JwtConstants.REFRESH_TOKEN_COOKIE_NAME, "")
-                .httpOnly(false) // 배포 시 true로 변경 필요
-                .secure(true)
+                .httpOnly(true)
+                .secure(authCookieProperties.secure())
                 .sameSite("Strict")
                 .path("/")
                 .maxAge(0)

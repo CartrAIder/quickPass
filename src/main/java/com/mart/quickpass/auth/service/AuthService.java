@@ -64,7 +64,7 @@ public class AuthService {
 
     // 로그아웃 메서드 - 저장된 리프레시 토큰 삭제
     public void logout(String refreshToken) {
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
+        if (!jwtTokenProvider.validateToken(refreshToken) || !jwtTokenProvider.isRefreshToken(refreshToken)) {
             return;
         }
 
@@ -74,11 +74,11 @@ public class AuthService {
 
     // 토큰 발급 및 리프레시 토큰 저장 메서드
     private AuthTokens issueTokens(User user) {
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getEmail(), user.getRole());
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
         refreshTokenRepository.save(user.getId(), refreshToken);
 
-        return new AuthTokens(accessToken, refreshToken);
+        return new AuthTokens(accessToken, refreshToken, user.getName());
     }
 }

@@ -1,0 +1,4 @@
+auth:
+  cookie:
+    # HTTP 로컬 개발 환경에서만 refresh 쿠키 저장을 허용한다.
+    secure: false

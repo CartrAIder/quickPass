@@ -31,6 +31,11 @@ jwt:
   access-token-validity: 1800000    # 30분 (ms)
   refresh-token-validity: 1209600000  # 14일 (ms)
 
+auth:
+  cookie:
+    # 운영을 포함한 기본 프로필에서는 HTTPS 쿠키만 허용한다.
+    secure: true
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html            # Swagger UI 접속 경로

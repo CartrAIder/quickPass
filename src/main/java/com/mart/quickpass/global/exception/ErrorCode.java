@@ -1,0 +1,42 @@
+package com.mart.quickpass.global.exception;
+
+import org.springframework.http.HttpStatus;
+
+/** 프론트엔드 분기에 사용하는 변경되지 않는 API 오류 코드와 HTTP 상태의 단일 기준이다. */
+public enum ErrorCode {
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT),
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED),
+
+    CART_NOT_FOUND(HttpStatus.NOT_FOUND),
+    CART_ALREADY_IN_USE(HttpStatus.CONFLICT),
+    CART_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND),
+    CART_ACCESS_DENIED(HttpStatus.FORBIDDEN),
+    CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND),
+
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND),
+    DUPLICATE_ORDER_PRODUCT(HttpStatus.BAD_REQUEST),
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND),
+    ORDER_ACCESS_DENIED(HttpStatus.FORBIDDEN),
+
+    PAYMENT_ATTEMPT_NOT_FOUND(HttpStatus.NOT_FOUND),
+    INVALID_PAYMENT_STATE(HttpStatus.CONFLICT),
+
+    VALIDATION_ERROR(HttpStatus.BAD_REQUEST),
+    MALFORMED_REQUEST(HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
+
+    private final HttpStatus httpStatus;
+
+    ErrorCode(HttpStatus httpStatus) {
+        this.httpStatus = httpStatus;
+    }
+
+    public HttpStatus httpStatus() {
+        return httpStatus;
+    }
+}

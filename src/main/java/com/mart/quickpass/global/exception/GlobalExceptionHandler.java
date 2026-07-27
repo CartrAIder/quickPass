@@ -1,7 +1,8 @@
 package com.mart.quickpass.global.exception;
 
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -9,91 +10,19 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(DuplicateEmailException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateEmail(DuplicateEmailException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(CartNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleCartNotFound(CartNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(CartAlreadyInUseException.class)
-    public ResponseEntity<ErrorResponse> handleCartAlreadyInUse(CartAlreadyInUseException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(CartSessionNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleCartSessionNotFound(CartSessionNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(CartAccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleCartAccessDenied(CartAccessDeniedException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(CartItemNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleCartItemNotFound(CartItemNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(ProductNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleProductNotFound(ProductNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(DuplicateOrderProductException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateOrderProduct(DuplicateOrderProductException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler({OrderNotFoundException.class, PaymentAttemptNotFoundException.class})
-    public ResponseEntity<ErrorResponse> handleOrderOrPaymentAttemptNotFound(RuntimeException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(OrderAccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleOrderAccessDenied(OrderAccessDeniedException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ErrorResponse.of(e.getMessage()));
-    }
-
-    @ExceptionHandler(InvalidPaymentStateException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidPaymentState(InvalidPaymentStateException e) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ErrorResponse.of(e.getMessage()));
+    /**
+     * 모든 업무 예외는 생성 시점에 ErrorCode를 받는다.
+     * 따라서 새 업무 예외가 이 기반 클래스를 상속하면 code와 HTTP 상태를 빼먹을 수 없다.
+     */
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
+        ErrorCode errorCode = e.getErrorCode();
+        return ResponseEntity.status(errorCode.httpStatus())
+                .body(ErrorResponse.of(errorCode.name(), e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -102,7 +31,26 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .toList();
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ErrorResponse.of("입력값이 올바르지 않습니다.", details));
+        return ResponseEntity.status(ErrorCode.VALIDATION_ERROR.httpStatus())
+                .body(ErrorResponse.of(
+                        ErrorCode.VALIDATION_ERROR.name(),
+                        "입력값이 올바르지 않습니다.",
+                        details
+                ));
+    }
+
+    /** JSON 문법 오류나 타입 변환 불가 요청도 Boot 기본 형식 대신 공통 계약으로 반환한다. */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleMalformedRequest(HttpMessageNotReadableException e) {
+        return ResponseEntity.status(ErrorCode.MALFORMED_REQUEST.httpStatus())
+                .body(ErrorResponse.of(ErrorCode.MALFORMED_REQUEST.name(), "요청 본문 형식이 올바르지 않습니다."));
+    }
+
+    /** 내부 상세 정보는 로그에만 남기고, 프론트에는 안전하고 안정적인 코드만 노출한다. */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception e) {
+        log.error("처리되지 않은 API 예외", e);
+        return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.httpStatus())
+                .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR.name(), "서버 내부 오류가 발생했습니다."));
     }
 }

@@ -7,7 +7,9 @@ public record PaymentConfirmResponse(
         String paymentAttemptId,
         String paymentKey,
         Long approvedAmount,
-        PaymentStatus status
+        PaymentStatus status,
+        String code,
+        String message
 ) {
 
     public static PaymentConfirmResponse from(PaymentAttempt attempt) {
@@ -15,7 +17,9 @@ public record PaymentConfirmResponse(
                 attempt.getPaymentAttemptId(),
                 attempt.getPaymentKey(),
                 attempt.getApprovedAmount(),
-                attempt.getStatus()
+                attempt.getStatus(),
+                attempt.getFailureCode(),
+                attempt.getFailureMessage()
         );
     }
 }

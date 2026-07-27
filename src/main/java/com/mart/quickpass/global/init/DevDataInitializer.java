@@ -16,16 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-
-/**
- * 로컬 개발용 초기 데이터 시더.
- *
- * <p>{@code ddl-auto: create}로 매 기동 시 테이블이 비워지므로, 앱을 띄우면
- * 가상 카트/상품이 자동으로 채워진다. 중복 삽입은 {@code existsByQrCode}/{@code existsByBarcode}로 방지한다.
- *
- * <p><b>⚠️ 배포 전 필수 조치</b>: 현재는 프로필 제한 없이 <b>모든 환경에서 실행</b>된다.
- * 운영에 시드가 들어가지 않도록, 배포 전 {@code @Profile("local")}을 다시 붙일 것.
- */
+// 개발용 초기 데이터
 @Slf4j
 // TODO: 배포 전 @Profile("local") 복구 (지금은 프로필 무관하게 시드되도록 임시로 꺼둠)
 @Component
@@ -36,6 +27,9 @@ public class DevDataInitializer implements CommandLineRunner {
     private static final String TEST_USER_EMAIL = "test@test.com";
     private static final String TEST_USER_PASSWORD = "1234test@";
     private static final String TEST_USER_NAME = "김춘식";
+    private static final String ADMIN_EMAIL = "admin@cartraider.com";
+    private static final String ADMIN_PASSWORD = "admin1234@";
+    private static final String ADMIN_NAME = "관리자";
 
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
@@ -44,7 +38,8 @@ public class DevDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        seedUser(TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_NAME);
+        seedUser(TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_NAME, UserRole.USER);
+        seedUser(ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME, UserRole.ADMIN);
         seedCart(CART_001_QR, CartStatus.WAITING);
 
         // 장바구니 스캔 데모용 상품 (바코드는 시뮬레이터/문서 예시와 맞춤)
@@ -144,7 +139,7 @@ public class DevDataInitializer implements CommandLineRunner {
         log.info("[DevData] 상품 시드 완료 - barcode={}, name={}, price={}", barcode, name, price);
     }
 
-    private void seedUser(String email, String rawPassword, String name) {
+    private void seedUser(String email, String rawPassword, String name, UserRole role) {
         if (userRepository.existsByEmail(email)) {
             log.info("[DevData] 사용자 '{}' 이미 존재 - 시드 생략", email);
             return;
@@ -153,7 +148,7 @@ public class DevDataInitializer implements CommandLineRunner {
                 .email(email)
                 .password(passwordEncoder.encode(rawPassword))
                 .name(name)
-                .role(UserRole.USER)
+                .role(role)
                 .build();
         userRepository.save(user);
         log.info("[DevData] 테스트 사용자 시드 완료 - email={}, name={}", email, name);

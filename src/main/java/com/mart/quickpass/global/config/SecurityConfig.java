@@ -33,6 +33,9 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/reissue",
             "/api/auth/logout",
+            "/api/mobile/auth/login",
+            "/api/mobile/auth/reissue",
+            "/api/mobile/auth/logout",
             // SSE 구독은 액세스 토큰 대신 단명 티켓으로 인증한다(컨트롤러에서 검증). 티켓 발급(/sse-ticket)은 인증 필요.
             "/api/carts/subscribe",
             // 토스 결제 완료 후 successUrl/failUrl로 브라우저가 직접 이동한다.

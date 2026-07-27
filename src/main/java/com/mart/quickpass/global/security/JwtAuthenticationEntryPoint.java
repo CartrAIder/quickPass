@@ -1,6 +1,7 @@
 package com.mart.quickpass.global.security;
 
 import com.mart.quickpass.global.exception.ErrorResponse;
+import com.mart.quickpass.global.exception.ErrorCode;
 import com.mart.quickpass.global.security.jwt.JwtConstants;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,11 +44,11 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private ErrorResponse buildBody(String errorCode) {
         if (JwtConstants.ERROR_EXPIRED_TOKEN.equals(errorCode)) {
-            return ErrorResponse.of(errorCode, "로그아웃 되었습니다. 재로그인 하세요");
+            return ErrorResponse.of(ErrorCode.EXPIRED_TOKEN.name(), "로그아웃 되었습니다. 재로그인 하세요");
         }
         if (JwtConstants.ERROR_INVALID_TOKEN.equals(errorCode)) {
-            return ErrorResponse.of(errorCode, "유효하지 않은 토큰입니다.");
+            return ErrorResponse.of(ErrorCode.INVALID_TOKEN.name(), "유효하지 않은 토큰입니다.");
         }
-        return ErrorResponse.of("인증이 필요합니다.");
+        return ErrorResponse.of(ErrorCode.UNAUTHORIZED.name(), "인증이 필요합니다.");
     }
 }

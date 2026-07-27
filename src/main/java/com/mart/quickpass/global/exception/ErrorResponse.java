@@ -22,4 +22,8 @@ public record ErrorResponse(
     public static ErrorResponse of(String code, String message) {
         return new ErrorResponse(code, message, List.of());
     }
+
+    public static ErrorResponse of(String code, String message, List<String> details) {
+        return new ErrorResponse(code, message, details);
+    }
 }

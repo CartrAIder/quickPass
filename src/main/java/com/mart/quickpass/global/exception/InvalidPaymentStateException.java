@@ -1,8 +1,8 @@
 package com.mart.quickpass.global.exception;
 
-public class InvalidPaymentStateException extends RuntimeException {
+public class InvalidPaymentStateException extends BusinessException {
 
     public InvalidPaymentStateException(String message) {
-        super(message);
+        super(ErrorCode.INVALID_PAYMENT_STATE, message);
     }
 }
