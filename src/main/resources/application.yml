@@ -48,3 +48,8 @@ mqtt:
 cart:
   session:
     ttl: 2h    # 카트 점유/아이템 세션의 유휴 타임아웃 (스캔/연동 시마다 초기화)
+
+toss-payments:
+  # 클라이언트 키는 결제창을 여는 브라우저에서 사용한다. 시크릿 키는 절대 프론트에 노출하지 않는다.
+  client-key: ${TOSS_CLIENT_KEY:}
+  secret-key: ${TOSS_SECRET_KEY:}

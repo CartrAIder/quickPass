@@ -6,9 +6,13 @@ import com.mart.quickpass.cart.repository.CartRepository;
 import com.mart.quickpass.product.entity.Product;
 import com.mart.quickpass.product.entity.ProductStatus;
 import com.mart.quickpass.product.repository.ProductRepository;
+import com.mart.quickpass.user.entity.User;
+import com.mart.quickpass.user.entity.UserRole;
+import com.mart.quickpass.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -29,12 +33,18 @@ import java.util.List;
 public class DevDataInitializer implements CommandLineRunner {
 
     private static final String CART_001_QR = "cart_001";
+    private static final String TEST_USER_EMAIL = "test@test.com";
+    private static final String TEST_USER_PASSWORD = "1234test@";
+    private static final String TEST_USER_NAME = "김춘식";
 
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
+        seedUser(TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_NAME);
         seedCart(CART_001_QR, CartStatus.WAITING);
 
         // 장바구니 스캔 데모용 상품 (바코드는 시뮬레이터/문서 예시와 맞춤)
@@ -132,6 +142,21 @@ public class DevDataInitializer implements CommandLineRunner {
                 .build();
         productRepository.save(product);
         log.info("[DevData] 상품 시드 완료 - barcode={}, name={}, price={}", barcode, name, price);
+    }
+
+    private void seedUser(String email, String rawPassword, String name) {
+        if (userRepository.existsByEmail(email)) {
+            log.info("[DevData] 사용자 '{}' 이미 존재 - 시드 생략", email);
+            return;
+        }
+        User user = User.builder()
+                .email(email)
+                .password(passwordEncoder.encode(rawPassword))
+                .name(name)
+                .role(UserRole.USER)
+                .build();
+        userRepository.save(user);
+        log.info("[DevData] 테스트 사용자 시드 완료 - email={}, name={}", email, name);
     }
 
     private record DemoProduct(String barcode, String name, int price, String category) {
