@@ -11,40 +11,45 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class EmailVerificationRepository {
 
+    // Redis 키 접두사
     private static final String CODE_KEY_PREFIX = "emailVerification:code:";
     private static final String VERIFIED_KEY_PREFIX = "emailVerification:verified:";
     private static final String COOLDOWN_KEY_PREFIX = "emailVerification:cooldown:";
 
     private final StringRedisTemplate redisTemplate;
 
+    // 인증번호의 SHA-256 해시를 Redis에 저장
     public void saveCode(String email, String codeHash, Duration ttl) {
         redisTemplate.opsForValue().set(codeKey(email), codeHash, ttl);
     }
 
+    // 인증 해시번호 조회
     public Optional<String> findCodeHash(String email) {
         return Optional.ofNullable(redisTemplate.opsForValue().get(codeKey(email)));
     }
 
+    // 인증번호 삭제
     public void deleteCode(String email) {
         redisTemplate.delete(codeKey(email));
     }
 
+
+    // 인증 완료상태 저장
     public void markVerified(String email, Duration ttl) {
         redisTemplate.opsForValue().set(verifiedKey(email), "true", ttl);
     }
 
+    // 인증 완료 여부 확인
     public boolean isVerified(String email) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(verifiedKey(email)));
     }
 
+    // 인증 완료 상태 삭제
     public void consumeVerified(String email) {
         redisTemplate.delete(verifiedKey(email));
     }
 
-    /**
-     * GET 후 SET으로 확인하면 동시에 들어온 발송 요청이 모두 통과할 수 있다.
-     * Redis SET NX로 재발송 제한 획득을 원자적으로 처리한다.
-     */
+    // 재발송 제한 cooldown키 저장(원자적 처리)
     public boolean acquireCooldown(String email, Duration ttl) {
         return Boolean.TRUE.equals(redisTemplate.opsForValue()
                 .setIfAbsent(cooldownKey(email), "true", ttl));

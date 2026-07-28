@@ -19,6 +19,7 @@ public class EmailVerificationController {
 
     private final EmailVerificationService emailVerificationService;
 
+    // 인증번호 전송 컨트롤러
     @PostMapping
     public ResponseEntity<EmailVerificationResponse> sendCode(
             @Valid @RequestBody EmailVerificationSendRequest request
@@ -27,6 +28,7 @@ public class EmailVerificationController {
         return ResponseEntity.ok(new EmailVerificationResponse("인증번호를 이메일로 전송했습니다."));
     }
 
+    // 인증번호 검증 컨트롤러
     @PostMapping("/confirm")
     public ResponseEntity<EmailVerificationResponse> confirmCode(
             @Valid @RequestBody EmailVerificationConfirmRequest request
