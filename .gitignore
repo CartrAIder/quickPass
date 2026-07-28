@@ -1,12 +1,17 @@
+# Project-local notes (documentation under docs/ is versioned)
 HELP.md
 *.md
 !docs/
-!docs/*.md
-.gradle
+!docs/**/*.md
+
+### Gradle / Java ###
+.gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+*.class
+hs_err_pid*
 
 ### STS ###
 .apt_generated
@@ -21,7 +26,7 @@ bin/
 !**/src/test/**/bin/
 
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -46,12 +51,34 @@ workspace/
 
 ### cart-simulator (python) - 로컬 개발 도구, 커밋 제외 ###
 tools/cart-simulator/
-__pycache__/
 
-### Local environment and secrets ###
+### Python ###
+**/.venv/
+**/venv/
+**/env/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+### Local environment / secrets ###
 .env
 .env.*
-*.log
-.DS_Store
+!.env.example
+!.env.sample
 *.pem
 *.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+
+### Logs / OS ###
+*.log
+.DS_Store
+**/.DS_Store
+Thumbs.db

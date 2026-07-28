@@ -15,6 +15,7 @@ import org.springframework.web.client.RestClientException;
 @Component
 @RequiredArgsConstructor
 public class ResendEmailClient {
+    // Redsnd API와 통신하는 클라이언트 계층
 
     private static final String RESEND_API_URL = "https://api.resend.com";
 
