@@ -24,6 +24,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
+    /**
+     * 회원가입 전 공개 API에는 프론트의 공통 인터셉터가 만료된 Authorization 헤더를 붙여도
+     * 인증을 시도하지 않는다. 공개 API의 permitAll 설정보다 토큰 파싱 오류가 앞서지 않게 한다.
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        return path.equals("/api/email-verifications")
+                || path.startsWith("/api/email-verifications/");
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {

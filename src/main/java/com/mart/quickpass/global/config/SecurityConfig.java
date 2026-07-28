@@ -30,6 +30,10 @@ public class SecurityConfig {
 
     private static final String[] PERMIT_ALL_PATTERNS = {
             "/api/users/signup",
+            // 회원가입 전 이메일 인증 API는 비로그인 사용자가 호출한다.
+            "/api/email-verifications",
+            "/api/email-verifications/confirm",
+            "/api/email-verifications/**",
             "/api/auth/login",
             "/api/auth/reissue",
             "/api/auth/logout",

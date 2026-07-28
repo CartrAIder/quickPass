@@ -5,6 +5,11 @@ import org.springframework.http.HttpStatus;
 /** 프론트엔드 분기에 사용하는 변경되지 않는 API 오류 코드와 HTTP 상태의 단일 기준이다. */
 public enum ErrorCode {
     DUPLICATE_EMAIL(HttpStatus.CONFLICT),
+    EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST),
+    INVALID_EMAIL_VERIFICATION_CODE(HttpStatus.BAD_REQUEST),
+    EMAIL_VERIFICATION_EXPIRED(HttpStatus.BAD_REQUEST),
+    EMAIL_VERIFICATION_TOO_FREQUENT(HttpStatus.TOO_MANY_REQUESTS),
+    EMAIL_SEND_FAILED(HttpStatus.BAD_GATEWAY),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED),
 
