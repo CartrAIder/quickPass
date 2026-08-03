@@ -19,10 +19,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
-/**
- * 토스페이먼츠가 전송한 웹훅 원문과 처리 상태를 보관한다.
- * transmissionId의 유니크 제약조건으로 동일 웹훅의 중복 수신을 방지한다.
- */
 @Entity
 @Table(
         name = "webhook_events",
@@ -38,46 +34,46 @@ public class WebhookEvent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; // 기본키
 
     @Column(name = "transmission_id", nullable = false, length = 200)
-    private String transmissionId;
+    private String transmissionId; // 고유 ID
 
     @Column(name = "event_type", nullable = false, length = 100)
-    private String eventType;
+    private String eventType; // 이벤트 종류
 
     @Column(name = "payment_key", length = 200)
-    private String paymentKey;
+    private String paymentKey; // 결제 식별키
 
     @Column(name = "external_order_id", length = 64)
-    private String externalOrderId;
+    private String externalOrderId; // 주문 번호
 
     @Column(nullable = false, columnDefinition = "json")
-    private String payload;
+    private String payload; // 토스 원본 json 저장
 
     @Enumerated(EnumType.STRING)
     @Column(name = "process_status", nullable = false, length = 30)
-    private WebhookProcessStatus processStatus;
+    private WebhookProcessStatus processStatus; // 웹훅 처리 상태
 
     @Column(name = "retry_count", nullable = false)
-    private int retryCount;
+    private int retryCount; // 재시도 횟수
 
     @Column(name = "failure_message", length = 500)
-    private String failureMessage;
+    private String failureMessage; // 실패 메시지
 
     @Column(name = "received_at", nullable = false)
-    private LocalDateTime receivedAt;
+    private LocalDateTime receivedAt; // 서버 도착 시간
 
     @Column(name = "processed_at")
-    private LocalDateTime processedAt;
+    private LocalDateTime processedAt; // 처리 종료 시간
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt; // 웹훅 생성 시간
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private LocalDateTime updatedAt; // 갱신 시간
 
     @Builder
     public WebhookEvent(

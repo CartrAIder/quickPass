@@ -20,6 +20,9 @@ public enum ErrorCode {
     CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND),
 
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND),
+    DUPLICATE_PRODUCT_BARCODE(HttpStatus.CONFLICT),
+    PRODUCT_NOT_ON_SALE(HttpStatus.CONFLICT),
+    INVALID_PRODUCT_PRICE(HttpStatus.CONFLICT),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND),
     DUPLICATE_ORDER_PRODUCT(HttpStatus.BAD_REQUEST),
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND),
@@ -33,6 +36,7 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED),
+    FORBIDDEN(HttpStatus.FORBIDDEN),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final HttpStatus httpStatus;

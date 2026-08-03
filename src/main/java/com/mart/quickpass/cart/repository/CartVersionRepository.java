@@ -22,6 +22,11 @@ public class CartVersionRepository {
         return value == null ? 0L : value;
     }
 
+    public long current(String qrCode) {
+        String value = redisTemplate.opsForValue().get(key(qrCode));
+        return value == null ? 0L : Long.parseLong(value);
+    }
+
     // TTL 초기화
     public void refreshTtl(String qrCode, Duration ttl) {
         redisTemplate.expire(key(qrCode), ttl);

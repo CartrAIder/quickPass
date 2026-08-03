@@ -1,6 +1,7 @@
 # Project-local notes (documentation under docs/ is versioned)
 HELP.md
 *.md
+!AGENTS.md
 !docs/
 !docs/**/*.md
 

@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
@@ -59,7 +60,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            setAuthentication(request, Long.valueOf(claims.getSubject()));
+            setAuthentication(request, Long.valueOf(claims.getSubject()),
+                    claims.get(JwtTokenProvider.CLAIM_ROLE, String.class));
         } catch (ExpiredJwtException e) {
             // 만료는 별도 코드로 구분해 프론트가 재발급(/reissue)을 시도할 수 있게 한다.
             request.setAttribute(JwtConstants.TOKEN_ERROR_ATTRIBUTE, JwtConstants.ERROR_EXPIRED_TOKEN);
@@ -70,9 +72,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     // SecurityContext에 인증 정보를 세팅(principal은 userId)
-    private void setAuthentication(HttpServletRequest request, Long userId) {
+    private void setAuthentication(HttpServletRequest request, Long userId, String role) {
+        List<SimpleGrantedAuthority> authorities = role == null
+                ? List.of()
+                : List.of(new SimpleGrantedAuthority("ROLE_" + role));
         UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(userId, null, List.of());
+                new UsernamePasswordAuthenticationToken(userId, null, authorities);
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);

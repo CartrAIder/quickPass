@@ -22,16 +22,16 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "order_items")
-@Check(name = "ck_order_items_unit_price", constraints = "unit_price >= 0")
+@Check(name = "ck_order_items_unit_price", constraints = "unit_price > 0")
 @Check(name = "ck_order_items_quantity", constraints = "quantity > 0")
-@Check(name = "ck_order_items_line_amount", constraints = "line_amount >= 0")
+@Check(name = "ck_order_items_line_amount", constraints = "line_amount > 0")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; // 기본키
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -39,7 +39,7 @@ public class OrderItem {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_order_items_order")
     )
-    private Order order;
+    private Order order; // 주문
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -47,23 +47,19 @@ public class OrderItem {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_order_items_product")
     )
-    private Product product;
+    private Product product; // 상품
 
     @Column(name = "product_name", nullable = false, length = 100)
-    private String productName;
+    private String productName; // 상품 이름
 
     @Column(name = "unit_price", nullable = false)
-    private Long unitPrice;
+    private Long unitPrice; // 상품 가격
 
     @Column(nullable = false)
-    private Integer quantity;
+    private Integer quantity; // 상품 수량
 
     @Column(name = "line_amount", nullable = false)
-    private Long lineAmount;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Long lineAmount; // 총 금액
 
     @Builder
     public OrderItem(

@@ -4,6 +4,7 @@ import com.mart.quickpass.order.entity.Order;
 import com.mart.quickpass.order.entity.OrderStatus;
 
 public record OrderCreateResponse(
+        // 응답 dto
         Long id,
         String orderId,
         String orderName,
