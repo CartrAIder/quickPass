@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record OrderCreateItemRequest(
+        // 상품 dto
 
         @NotNull(message = "상품 ID는 필수입니다.")
         Long productId,

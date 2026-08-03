@@ -1,9 +1,11 @@
 package com.mart.quickpass.global.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -44,6 +46,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMalformedRequest(HttpMessageNotReadableException e) {
         return ResponseEntity.status(ErrorCode.MALFORMED_REQUEST.httpStatus())
                 .body(ErrorResponse.of(ErrorCode.MALFORMED_REQUEST.name(), "요청 본문 형식이 올바르지 않습니다."));
+    }
+
+    /** 쿼리 파라미터와 경로 변수의 검증/타입 오류도 요청 오류로 통일한다. */
+    @ExceptionHandler({ConstraintViolationException.class, MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ErrorResponse> handleInvalidRequestParameter(Exception e) {
+        return ResponseEntity.status(ErrorCode.VALIDATION_ERROR.httpStatus())
+                .body(ErrorResponse.of(ErrorCode.VALIDATION_ERROR.name(), "요청 파라미터가 올바르지 않습니다."));
     }
 
     /** 내부 상세 정보는 로그에만 남기고, 프론트에는 안전하고 안정적인 코드만 노출한다. */

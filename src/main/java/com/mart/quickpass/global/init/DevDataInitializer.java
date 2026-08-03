@@ -43,7 +43,7 @@ public class DevDataInitializer implements CommandLineRunner {
         seedCart(CART_001_QR, CartStatus.WAITING);
 
         // 장바구니 스캔 데모용 상품 (바코드는 시뮬레이터/문서 예시와 맞춤)
-        seedProduct("8801234567890", "라면", 1200, "식품");
+        seedProduct("8801234567890", "라면", 10, "식품");
         seedProduct("8801234567891", "샴푸", 9800, "생활용품");
         seedProduct("8801234567892", "삼겹살", 15000, "정육");
 

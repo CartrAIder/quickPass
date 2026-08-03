@@ -4,14 +4,19 @@ import com.mart.quickpass.cart.entity.Cart;
 import com.mart.quickpass.cart.entity.CartStatus;
 
 public record CartConnectResponse(
-        // 카트 상태 변경(연결) dto
-
         Long cartId,
         String qrCode,
-        CartStatus status
+        CartStatus status,
+        CartConnectionType connectionType,
+        CartSnapshotResponse snapshot
 ) {
 
-    public static CartConnectResponse from(Cart cart) {
-        return new CartConnectResponse(cart.getId(), cart.getQrCode(), cart.getStatus());
+    public static CartConnectResponse of(
+            Cart cart,
+            CartConnectionType connectionType,
+            CartSnapshotResponse snapshot
+    ) {
+        return new CartConnectResponse(
+                cart.getId(), cart.getQrCode(), cart.getStatus(), connectionType, snapshot);
     }
 }

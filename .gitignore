@@ -1,5 +1,6 @@
 HELP.md
 *.md
+!AGENTS.md
 !docs/
 !docs/*.md
 .gradle

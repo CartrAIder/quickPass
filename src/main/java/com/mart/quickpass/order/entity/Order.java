@@ -30,17 +30,17 @@ import java.time.LocalDateTime;
         name = "orders",
         uniqueConstraints = @UniqueConstraint(name = "uk_orders_order_id", columnNames = "order_id")
 )
-@Check(constraints = "total_amount >= 0")
+@Check(constraints = "total_amount > 0")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; // 기본키
 
     @Column(name = "order_id", nullable = false, length = 64)
-    private String orderId;
+    private String orderId; // 주문 번호
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -48,32 +48,30 @@ public class Order {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_orders_user")
     )
-    private User user;
+    private User user; // 유저
 
     @Column(name = "order_name", nullable = false, length = 100)
-    private String orderName;
+    private String orderName; // 주문 이름
 
     @Column(name = "total_amount", nullable = false)
-    private Long totalAmount;
+    private Long totalAmount; // 주문의 총 금액
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private OrderStatus status;
+    private OrderStatus status; // 상태
 
-    @Column(name = "expires_at")
-    private LocalDateTime expiresAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt; // 주문 생성 시간
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private LocalDateTime updatedAt; // 주문 업데이트 시간
 
     @Version
     @Column(nullable = false)
-    private Long version;
+    private Long version; // 버전 번호(낙관적 락)
 
     @Builder
     public Order(
@@ -89,7 +87,6 @@ public class Order {
         this.orderName = orderName;
         this.totalAmount = totalAmount;
         this.status = status;
-        this.expiresAt = expiresAt;
     }
 
     public void markPaid() {

@@ -33,10 +33,10 @@ import java.time.LocalDateTime;
                 @UniqueConstraint(name = "uk_payment_attempts_payment_key", columnNames = "payment_key")
         }
 )
-@Check(name = "ck_payment_attempts_requested_amount", constraints = "requested_amount >= 0")
+@Check(name = "ck_payment_attempts_requested_amount", constraints = "requested_amount > 0")
 @Check(
         name = "ck_payment_attempts_approved_amount",
-        constraints = "approved_amount IS NULL OR approved_amount >= 0"
+        constraints = "approved_amount IS NULL OR approved_amount > 0"
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -44,10 +44,10 @@ public class PaymentAttempt {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long id; // 기본키
 
     @Column(name = "payment_attempt_id", nullable = false, length = 64)
-    private String paymentAttemptId;
+    private String paymentAttemptId; // 결제 시도 체크 번호
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
@@ -55,53 +55,53 @@ public class PaymentAttempt {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_payment_attempts_order")
     )
-    private Order order;
+    private Order order; // 주문
 
     @Column(name = "payment_key", length = 200)
-    private String paymentKey;
+    private String paymentKey; // 결제 시도 키(토스 페이먼츠 측)
 
     @Column(nullable = false, length = 30)
-    private String provider;
+    private String provider; // 결제 제공자(추후 확장성 용도)
 
     @Column(length = 30)
-    private String method;
+    private String method; // 결제 수단
 
     @Column(name = "requested_amount", nullable = false)
-    private Long requestedAmount;
+    private Long requestedAmount; // 요청 금액
 
     @Column(name = "approved_amount")
-    private Long approvedAmount;
+    private Long approvedAmount; // 승인 금액
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private PaymentStatus status;
+    private PaymentStatus status; // 결제 상태
 
     @Column(name = "provider_status", length = 30)
-    private String providerStatus;
+    private String providerStatus; // 결제사 결제 상태
 
     @Column(name = "failure_code", length = 100)
-    private String failureCode;
+    private String failureCode; // 결제 실패 코드
 
     @Column(name = "failure_message", length = 500)
-    private String failureMessage;
+    private String failureMessage; // 결제 실패 메시지
 
     @Column(name = "requested_at")
-    private LocalDateTime requestedAt;
+    private LocalDateTime requestedAt; // 요청 시각
 
     @Column(name = "approved_at")
-    private LocalDateTime approvedAt;
+    private LocalDateTime approvedAt; // 승인 시각
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt; // 생성 시간
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private LocalDateTime updatedAt; // 수정 시간
 
     @Version
     @Column(nullable = false)
-    private Long version;
+    private Long version; // 버전(낙관적 락)
 
     @Builder
     public PaymentAttempt(
@@ -134,10 +134,14 @@ public class PaymentAttempt {
         this.approvedAt = approvedAt;
     }
 
+
+    //상태 변화 메서드//
+
     public void markInProgress() {
         this.status = PaymentStatus.IN_PROGRESS;
         this.requestedAt = LocalDateTime.now();
     }
+
 
     public void markApproved(String paymentKey, Long approvedAmount, String providerStatus, String method) {
         this.paymentKey = paymentKey;
