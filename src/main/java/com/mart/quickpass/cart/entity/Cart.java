@@ -12,6 +12,10 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "carts")
@@ -28,7 +32,12 @@ public class Cart {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private CartStatus status; // 카트 상태(대기중, 사용중)
+    private CartStatus status; // 카트 상태(대기중, 비활성)
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
 
     @Builder
     public Cart(String qrCode, CartStatus status) {
@@ -36,11 +45,8 @@ public class Cart {
         this.status = status;
     }
 
-    public void markInUse() {
-        this.status = CartStatus.IN_USE;
-    }
 
-    public void markWaiting() {
-        this.status = CartStatus.WAITING;
+    public void markAvailable() {
+        this.status = CartStatus.AVAILABLE;
     }
 }

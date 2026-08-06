@@ -62,6 +62,14 @@ public class CartSseService {
         sendTo(userId, emitter, eventName, data);
     }
 
+    /** 서버가 카트 연결을 강제로 해제할 때 사용자의 SSE 연결도 종료한다. */
+    public void disconnect(Long userId) {
+        SseEmitter emitter = emitters.remove(userId);
+        if (emitter != null) {
+            emitter.complete();
+        }
+    }
+
     // 모든 활성 연결에 주석(heartbeat)을 보내 연결 유지 및 죽은 연결 정리
     public void sendHeartbeat() {
         emitters.forEach((userId, emitter) -> {
@@ -84,7 +92,15 @@ public class CartSseService {
             // 클라이언트가 끊었거나 emitter가 이미 완료된 상태. 정리하고 에러로 종료한다.
             log.debug("[Sse] 전송 실패로 연결 정리 - userId={}, event={}", userId, eventName);
             emitters.remove(userId, emitter);
-            emitter.completeWithError(e);
+            completeWithError(emitter, e);
+        }
+    }
+
+    private void completeWithError(SseEmitter emitter, Exception cause) {
+        try {
+            emitter.completeWithError(cause);
+        } catch (RuntimeException completionError) {
+            log.debug("[Sse] 이미 종료된 연결 정리 실패", completionError);
         }
     }
 }

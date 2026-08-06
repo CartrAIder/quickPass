@@ -43,7 +43,7 @@ public class CartController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    // 상품 개수 조절 (증감). 조절 후 수량이 0 이하면 제거되고 204 반환
+    // 상품 수량 변경. 요청 수량이 0이면 제거되고 204 반환
     @PatchMapping("/{qrCode}/items/{barcode}")
     public ResponseEntity<CartItemResponse> adjustQuantity(
             @AuthenticationPrincipal Long userId,

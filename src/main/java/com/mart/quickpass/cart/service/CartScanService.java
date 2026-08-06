@@ -4,17 +4,14 @@ import com.mart.quickpass.cart.dto.CartItem;
 import com.mart.quickpass.cart.dto.CartScanMessage;
 import com.mart.quickpass.cart.dto.CartSession;
 import com.mart.quickpass.cart.event.CartChangeType;
-import com.mart.quickpass.cart.event.CartChangedEvent;
 import com.mart.quickpass.cart.repository.CartItemsRepository;
 import com.mart.quickpass.cart.repository.CartRepository;
 import com.mart.quickpass.cart.repository.CartSessionRepository;
-import com.mart.quickpass.cart.repository.CartVersionRepository;
 import com.mart.quickpass.global.config.CartSessionProperties;
 import com.mart.quickpass.product.entity.Product;
 import com.mart.quickpass.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -31,10 +28,9 @@ public class CartScanService {
     private final CartRepository cartRepository;
     private final CartSessionRepository cartSessionRepository;
     private final CartItemsRepository cartItemsRepository;
-    private final CartVersionRepository cartVersionRepository;
     private final ProductRepository productRepository;
     private final CartSessionProperties cartSessionProperties;
-    private final ApplicationEventPublisher eventPublisher;
+    private final CartStateChangePublisher stateChangePublisher;
 
     // 카트에서 발생한 바코드 스캔을 처리한다
     public void handleScan(String qrCode, CartScanMessage scan) {
@@ -59,17 +55,12 @@ public class CartScanService {
         }
 
         addOrIncrementItem(qrCode, product);
-
-        // 점유 세션, 아이템 세션의 ttl을 초기화
+        // 점유 세션, 사용자 역인덱스, 아이템 세션의 TTL을 초기화
         var ttl = cartSessionProperties.ttl();
-        cartSessionRepository.refreshTtl(qrCode, ttl);
-        cartItemsRepository.refreshTtl(qrCode, ttl);
+        cartSessionRepository.refreshSessionTtl(session.get().userId(), qrCode, ttl);
 
         // 장바구니 ttl 초기화 + 사용자의 스마트폰으로 데이터 전송(SSE)
-        long version = cartVersionRepository.increment(qrCode);
-        cartVersionRepository.refreshTtl(qrCode, ttl);
-        eventPublisher.publishEvent(
-                CartChangedEvent.of(session.get().userId(), qrCode, CartChangeType.UPDATED, version));
+        stateChangePublisher.publish(session.get().userId(), qrCode, CartChangeType.UPDATED);
 
         log.info("[CartScan] qrCode={}, barcode={}, scannedAt={}", qrCode, scan.barcode(), scan.scannedAt());
     }

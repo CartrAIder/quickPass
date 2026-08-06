@@ -35,6 +35,7 @@ public class CartConnectionService {
     private final CartSessionGuard cartSessionGuard;
     private final CartSnapshotService cartSnapshotService;
     private final ApplicationEventPublisher eventPublisher;
+    private final CartStateChangePublisher stateChangePublisher;
 
     // 카트 연결 메서드
     @Transactional
@@ -51,18 +52,15 @@ public class CartConnectionService {
             throw new CartAlreadyInUseException(qrCode);
         }
 
-        // 카트의 상태를 사용중(USING)으로 수정
-        cart.markInUse();
-
-        cartItemsRepository.refreshTtl(qrCode, cartSessionProperties.ttl());
-        long version = claimResult == CartClaimResult.CREATED
-                ? cartVersionRepository.increment(qrCode)
-                : cartVersionRepository.current(qrCode);
-        cartVersionRepository.refreshTtl(qrCode, cartSessionProperties.ttl());
         CartChangeType changeType = claimResult == CartClaimResult.CREATED
                 ? CartChangeType.INITIALIZED : CartChangeType.RESUMED;
-        eventPublisher.publishEvent(
-                CartChangedEvent.of(userId, qrCode, changeType, version));
+        long version;
+        if (claimResult == CartClaimResult.CREATED) {
+            version = stateChangePublisher.publish(userId, qrCode, changeType);
+        } else {
+            version = cartVersionRepository.current(qrCode);
+            eventPublisher.publishEvent(CartChangedEvent.of(userId, qrCode, changeType, version));
+        }
 
         return response(cart, claimResult == CartClaimResult.CREATED
                 ? CartConnectionType.CREATED : CartConnectionType.RESUMED, version);
@@ -82,10 +80,7 @@ public class CartConnectionService {
         Cart cart = cartRepository.findByQrCode(qrCode.get())
                 .orElseThrow(() -> new CartNotFoundException(qrCode.get()));
         var ttl = cartSessionProperties.ttl();
-        cartSessionRepository.refreshTtl(qrCode.get(), ttl);
-        cartSessionRepository.refreshUserTtl(userId, ttl);
-        cartItemsRepository.refreshTtl(qrCode.get(), ttl);
-        cartVersionRepository.refreshTtl(qrCode.get(), ttl);
+        cartSessionRepository.refreshSessionTtl(userId, qrCode.get(), ttl);
         return Optional.of(response(cart, CartConnectionType.RESUMED,
                 cartVersionRepository.current(qrCode.get())));
     }
@@ -103,13 +98,8 @@ public class CartConnectionService {
         cartItemsRepository.deleteAll(qrCode);
         cartSessionRepository.deleteByQrCode(qrCode);
         cartSessionRepository.deleteUserCart(userId);
-        cart.markWaiting();
-
         // 세션 종료를 앱에 알린다
-        long version = cartVersionRepository.increment(qrCode);
-        cartVersionRepository.refreshTtl(qrCode, cartSessionProperties.ttl());
-        eventPublisher.publishEvent(
-                CartChangedEvent.of(userId, qrCode, CartChangeType.CLOSED, version));
+        stateChangePublisher.publish(userId, qrCode, CartChangeType.CLOSED);
     }
 
     private CartConnectResponse response(Cart cart, CartConnectionType type, long version) {

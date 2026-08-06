@@ -7,7 +7,6 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -54,11 +53,6 @@ public class CartItemsRepository {
     /** 장바구니의 아이템을 전부 비운다 (Hash 키 자체를 삭제). */
     public void deleteAll(String qrCode) {
         redisTemplate.delete(key(qrCode));
-    }
-
-    /** 유휴 타임아웃을 초기화한다 (sliding TTL). 아이템이 하나도 없으면 아무 효과가 없다. */
-    public void refreshTtl(String qrCode, Duration ttl) {
-        redisTemplate.expire(key(qrCode), ttl);
     }
 
     private HashOperations<String, String, String> hashOps() {

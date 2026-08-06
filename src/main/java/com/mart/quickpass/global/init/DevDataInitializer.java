@@ -40,7 +40,7 @@ public class DevDataInitializer implements CommandLineRunner {
     public void run(String... args) {
         seedUser(TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_NAME, UserRole.USER);
         seedUser(ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME, UserRole.ADMIN);
-        seedCart(CART_001_QR, CartStatus.WAITING);
+        seedCart(CART_001_QR, CartStatus.AVAILABLE);
 
         // 장바구니 스캔 데모용 상품 (바코드는 시뮬레이터/문서 예시와 맞춤)
         seedProduct("8801234567890", "라면", 10, "식품");
