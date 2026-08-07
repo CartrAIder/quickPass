@@ -1,7 +1,6 @@
 package com.mart.quickpass.user.controller;
 
 import com.mart.quickpass.user.dto.SignUpRequest;
-import com.mart.quickpass.user.dto.SignUpResponse;
 import com.mart.quickpass.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +18,11 @@ public class UserController {
 
     private final UserService userService;
 
+    // 회원가입 컨트롤러
     @PostMapping("/signup")
-    public ResponseEntity<SignUpResponse> signUp(@Valid @RequestBody SignUpRequest request) {
-        SignUpResponse response = userService.signUp(request);
+    public ResponseEntity<Void> signUp(@Valid @RequestBody SignUpRequest request) {
+        userService.signUp(request);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

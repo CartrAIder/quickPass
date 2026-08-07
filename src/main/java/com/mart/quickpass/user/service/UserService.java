@@ -3,7 +3,6 @@ package com.mart.quickpass.user.service;
 import com.mart.quickpass.global.exception.DuplicateEmailException;
 import com.mart.quickpass.email.service.EmailVerificationService;
 import com.mart.quickpass.user.dto.SignUpRequest;
-import com.mart.quickpass.user.dto.SignUpResponse;
 import com.mart.quickpass.user.entity.User;
 import com.mart.quickpass.user.entity.UserRole;
 import com.mart.quickpass.user.repository.UserRepository;
@@ -22,7 +21,7 @@ public class UserService {
 
     // 회원가입 메서드
     @Transactional
-    public SignUpResponse signUp(SignUpRequest request) {
+    public void signUp(SignUpRequest request) {
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.email())) {
             throw new DuplicateEmailException(request.email());
@@ -37,9 +36,7 @@ public class UserService {
                 .role(UserRole.USER)
                 .build();
 
-        User savedUser = userRepository.save(user);
+        userRepository.save(user);
         emailVerificationService.consumeVerification(request.email());
-
-        return SignUpResponse.from(savedUser);
     }
 }

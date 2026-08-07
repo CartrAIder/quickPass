@@ -22,6 +22,31 @@ public class ResendEmailClient {
     private final ResendProperties resendProperties;
 
     public void sendVerificationCode(String email, String code) {
+        sendEmail(
+                email,
+                "QuickPass 이메일 인증번호",
+                "<p>QuickPass 이메일 인증번호는 <strong>" + code + "</strong> 입니다.</p>"
+        );
+    }
+
+    public void sendPasswordResetCode(String email, String code) {
+        sendEmail(
+                email,
+                "QuickPass 비밀번호 재설정 인증번호",
+                "<p>QuickPass 비밀번호 재설정 인증번호는 <strong>" + code + "</strong> 입니다.</p>"
+        );
+    }
+
+    public void sendPasswordChangedNotice(String email) {
+        sendEmail(
+                email,
+                "QuickPass 비밀번호 변경 안내",
+                "<p>QuickPass 계정의 비밀번호가 변경되었습니다.</p>"
+                        + "<p>본인이 변경하지 않았다면 고객 지원팀에 문의해 주세요.</p>"
+        );
+    }
+
+    private void sendEmail(String email, String subject, String html) {
         if (!StringUtils.hasText(resendProperties.apiKey()) || !StringUtils.hasText(resendProperties.from())) {
             log.error("Resend 설정이 누락되었습니다. RESEND_API_KEY와 RESEND_FROM_EMAIL을 설정하세요.");
             throw new EmailSendFailedException();
@@ -38,8 +63,8 @@ public class ResendEmailClient {
                     .body(new ResendEmailRequest(
                             resendProperties.from(),
                             email,
-                            "QuickPass 이메일 인증번호",
-                            "<p>QuickPass 이메일 인증번호는 <strong>" + code + "</strong> 입니다.</p>"
+                            subject,
+                            html
                     ))
                     .retrieve()
                     .toBodilessEntity();

@@ -1,6 +1,7 @@
 package com.mart.quickpass.auth.controller;
 
 import com.mart.quickpass.auth.dto.AuthTokens;
+import com.mart.quickpass.auth.dto.ChangePasswordRequest;
 import com.mart.quickpass.auth.dto.LoginRequest;
 import com.mart.quickpass.auth.dto.LoginResponse;
 import com.mart.quickpass.auth.service.AuthService;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -62,7 +64,19 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    // 웹: Access Token은 헤더, Refresh Token은 HttpOnly 쿠키로만 전달한다.
+    // 비밀번호 변경 컨트롤러
+    @PostMapping("/password")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletResponse response) {
+        AuthTokens tokens = authService.changePassword(userId, request);
+        setTokenResponse(response, tokens);
+
+        return ResponseEntity.ok().build();
+    }
+
+    // 웹: Access Token은 헤더, Refresh Token은 HttpOnly 쿠키로만 전달
     private void setTokenResponse(HttpServletResponse response, AuthTokens tokens) {
         response.setHeader(HttpHeaders.AUTHORIZATION, JwtConstants.TOKEN_PREFIX + tokens.accessToken());
         response.addHeader(HttpHeaders.SET_COOKIE, buildRefreshTokenCookie(tokens.refreshToken()).toString());

@@ -1,10 +1,13 @@
 package com.mart.quickpass.auth.service;
 
 import com.mart.quickpass.auth.dto.AuthTokens;
+import com.mart.quickpass.auth.dto.ChangePasswordRequest;
 import com.mart.quickpass.auth.dto.LoginRequest;
 import com.mart.quickpass.auth.repository.RefreshTokenRepository;
+import com.mart.quickpass.global.exception.CurrentPasswordMismatchException;
 import com.mart.quickpass.global.exception.InvalidCredentialsException;
 import com.mart.quickpass.global.exception.InvalidTokenException;
+import com.mart.quickpass.global.exception.UserNotFoundException;
 import com.mart.quickpass.global.security.jwt.JwtTokenProvider;
 import com.mart.quickpass.user.entity.User;
 import com.mart.quickpass.user.repository.UserRepository;
@@ -70,6 +73,22 @@ public class AuthService {
 
         Long userId = jwtTokenProvider.getUserId(refreshToken);
         refreshTokenRepository.deleteByUserId(userId);
+    }
+
+    @Transactional
+    public AuthTokens changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new CurrentPasswordMismatchException();
+        }
+
+        user.changePassword(passwordEncoder.encode(request.newPassword()));
+
+        // 기존 Refresh Token을 제거한 뒤 새로운 토큰 쌍으로 교체한다.
+        refreshTokenRepository.deleteByUserId(userId);
+        return issueTokens(user);
     }
 
     // 토큰 발급 및 리프레시 토큰 저장 메서드

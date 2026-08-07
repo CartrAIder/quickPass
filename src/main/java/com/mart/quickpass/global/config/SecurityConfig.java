@@ -37,6 +37,8 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/reissue",
             "/api/auth/logout",
+            "/api/auth/password-reset",
+            "/api/auth/password-reset/**",
             "/api/mobile/auth/login",
             "/api/mobile/auth/reissue",
             "/api/mobile/auth/logout",
