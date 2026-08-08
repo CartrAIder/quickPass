@@ -17,12 +17,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import com.mart.quickpass.user.repository.UserRepository;
 
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserRepository userRepository;
 
     /**
      * 회원가입 전 공개 API에는 프론트의 공통 인터셉터가 만료된 Authorization 헤더를 붙여도
@@ -61,7 +63,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            setAuthentication(request, Long.valueOf(claims.getSubject()));
+            Long userId = Long.valueOf(claims.getSubject());
+            if (userRepository.findById(userId).filter(user -> user.isActive()).isEmpty()) {
+                request.setAttribute(JwtConstants.TOKEN_ERROR_ATTRIBUTE, JwtConstants.ERROR_INVALID_TOKEN);
+                return;
+            }
+            setAuthentication(request, userId);
         } catch (ExpiredJwtException e) {
             // 만료는 별도 코드로 구분해 프론트가 재발급(/reissue)을 시도할 수 있게 한다.
             request.setAttribute(JwtConstants.TOKEN_ERROR_ATTRIBUTE, JwtConstants.ERROR_EXPIRED_TOKEN);

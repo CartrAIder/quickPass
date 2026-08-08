@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Set;
 
 // 카트 연결 & 해제 담당 서비스 로직
 @Service
@@ -77,5 +78,12 @@ public class CartConnectionService {
         cartVersionRepository.refreshTtl(qrCode, cartSessionProperties.ttl());
         eventPublisher.publishEvent(
                 CartChangedEvent.of(userId, qrCode, CartChangeType.CLOSED, version));
+    }
+
+    /** 탈퇴 시 이 사용자가 점유한 모든 카트를 정상 반납 상태로 돌린다. */
+    @Transactional
+    public void disconnectAll(Long userId) {
+        Set<String> qrCodes = Set.copyOf(cartSessionRepository.findQrCodesByUserId(userId));
+        qrCodes.forEach(qrCode -> disconnect(userId, qrCode));
     }
 }

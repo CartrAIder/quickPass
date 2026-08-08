@@ -8,8 +8,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.util.Collection;
+import com.mart.quickpass.order.entity.OrderStatus;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
+
+    boolean existsByUserIdAndStatusIn(Long userId, Collection<OrderStatus> statuses);
 
     Optional<Order> findByOrderId(String orderId);
 

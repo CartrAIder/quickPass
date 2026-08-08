@@ -8,6 +8,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 
 // redis 카트 세션 레포지토리
 @Repository
@@ -15,6 +16,7 @@ import java.util.Optional;
 public class CartSessionRepository {
 
     private static final String KEY_PREFIX = "cart:session:";
+    private static final String USER_KEY_PREFIX = "cart:user:";
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
@@ -23,7 +25,12 @@ public class CartSessionRepository {
     public boolean claim(String qrCode, CartSession session, Duration ttl) {
         Boolean claimed = redisTemplate.opsForValue()
                 .setIfAbsent(key(qrCode), objectMapper.writeValueAsString(session), ttl);
-        return Boolean.TRUE.equals(claimed);
+        if (Boolean.TRUE.equals(claimed)) {
+            redisTemplate.opsForSet().add(userKey(session.userId()), qrCode);
+            redisTemplate.expire(userKey(session.userId()), ttl);
+            return true;
+        }
+        return false;
     }
 
     public Optional<CartSession> findByQrCode(String qrCode) {
@@ -35,15 +42,27 @@ public class CartSessionRepository {
     }
 
     public void deleteByQrCode(String qrCode) {
+        findByQrCode(qrCode).ifPresent(session ->
+                redisTemplate.opsForSet().remove(userKey(session.userId()), qrCode));
         redisTemplate.delete(key(qrCode));
+    }
+
+    public Set<String> findQrCodesByUserId(Long userId) {
+        Set<String> qrCodes = redisTemplate.opsForSet().members(userKey(userId));
+        return qrCodes == null ? Set.of() : qrCodes;
     }
 
     // TTL 초기화
     public void refreshTtl(String qrCode, Duration ttl) {
         redisTemplate.expire(key(qrCode), ttl);
+        findByQrCode(qrCode).ifPresent(session -> redisTemplate.expire(userKey(session.userId()), ttl));
     }
 
     private String key(String qrCode) {
         return KEY_PREFIX + qrCode;
+    }
+
+    private String userKey(Long userId) {
+        return USER_KEY_PREFIX + userId + ":carts";
     }
 }

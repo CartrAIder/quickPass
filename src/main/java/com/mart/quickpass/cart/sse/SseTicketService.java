@@ -73,4 +73,5 @@ public class SseTicketService {
     private String key(String ticket) {
         return KEY_PREFIX + ticket;
     }
+
 }

@@ -74,6 +74,13 @@ public class CartSseService {
         });
     }
 
+    public void disconnect(Long userId) {
+        SseEmitter emitter = emitters.remove(userId);
+        if (emitter != null) {
+            emitter.complete();
+        }
+    }
+
     // SSE 전송
     private void sendTo(Long userId, SseEmitter emitter, String eventName, Object data) {
         try {

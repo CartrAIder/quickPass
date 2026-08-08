@@ -40,6 +40,13 @@ public class User {
     @Column(nullable = false, length = 20)
     private UserRole role; // 권한
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserStatus status; // 회원 상태
+
+    @Column(name = "withdrawn_at")
+    private LocalDateTime withdrawnAt;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
@@ -54,9 +61,23 @@ public class User {
         this.password = password;
         this.name = name;
         this.role = role;
+        this.status = UserStatus.ACTIVE;
     }
 
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public boolean isActive() {
+        return status == UserStatus.ACTIVE;
+    }
+
+    // 식별 가능한 회원 정보 조치
+    public void withdraw(String anonymizedEmail, String unusablePassword) {
+        this.email = anonymizedEmail;
+        this.password = unusablePassword;
+        this.name = "탈퇴한 사용자";
+        this.status = UserStatus.WITHDRAWN;
+        this.withdrawnAt = LocalDateTime.now();
     }
 }

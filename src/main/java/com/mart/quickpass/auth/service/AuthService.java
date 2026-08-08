@@ -30,6 +30,7 @@ public class AuthService {
     public AuthTokens login(LoginRequest request) {
         // 이메일 기반 유저 탐색
         User user = userRepository.findByEmail(request.email())
+                .filter(User::isActive)
                 .orElseThrow(InvalidCredentialsException::new);
 
         // 비밀번호 일치 확인
@@ -59,6 +60,7 @@ public class AuthService {
         }
 
         User user = userRepository.findById(userId)
+                .filter(User::isActive)
                 .orElseThrow(InvalidTokenException::new);
 
         // 기존 리프레시 토큰을 새 토큰으로 교체하여 재발급
