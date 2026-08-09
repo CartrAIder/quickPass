@@ -112,6 +112,24 @@ public class CartConnectionService {
                 CartChangedEvent.of(userId, qrCode, CartChangeType.CLOSED, version));
     }
 
+    /** 탈퇴 시 사용자 역방향 인덱스로 현재 사용 중인 카트를 찾아 자동 반납한다. */
+    @Transactional
+    public void disconnectAll(Long userId) {
+        Optional<String> qrCode = cartSessionRepository.findQrCodeByUserId(userId);
+        if (qrCode.isEmpty()) {
+            return;
+        }
+
+        Optional<CartSession> session = cartSessionRepository.findByQrCode(qrCode.get());
+        if (session.isEmpty() || !session.get().userId().equals(userId)) {
+            // 만료 시점 차이로 역방향 인덱스만 남은 경우 안전하게 정리한다.
+            cartSessionRepository.deleteUserCart(userId);
+            return;
+        }
+
+        disconnect(userId, qrCode.get());
+    }
+
     private CartConnectResponse response(Cart cart, CartConnectionType type, long version) {
         return CartConnectResponse.of(
                 cart, type, cartSnapshotService.snapshot(cart.getQrCode(), version));

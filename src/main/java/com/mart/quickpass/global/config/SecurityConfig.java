@@ -5,6 +5,7 @@ import com.mart.quickpass.global.security.JwtAccessDeniedHandler;
 import com.mart.quickpass.global.security.jwt.JwtAuthenticationFilter;
 import com.mart.quickpass.global.security.jwt.JwtConstants;
 import com.mart.quickpass.global.security.jwt.JwtTokenProvider;
+import com.mart.quickpass.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +30,7 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    private final UserRepository userRepository;
 
     private static final String[] PERMIT_ALL_PATTERNS = {
             "/api/users/signup",
@@ -39,6 +41,8 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/reissue",
             "/api/auth/logout",
+            "/api/auth/password-reset",
+            "/api/auth/password-reset/**",
             "/api/mobile/auth/login",
             "/api/mobile/auth/reissue",
             "/api/mobile/auth/logout",
@@ -75,7 +79,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userRepository),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
