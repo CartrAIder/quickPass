@@ -20,6 +20,7 @@ public class OrderController {
 
     private final OrderService orderService;
 
+    // 주문 생성 컨트롤러
     @PostMapping
     public ResponseEntity<OrderCreateResponse> create(
             @AuthenticationPrincipal Long userId,

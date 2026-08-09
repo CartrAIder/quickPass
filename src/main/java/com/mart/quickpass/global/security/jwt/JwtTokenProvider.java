@@ -19,7 +19,7 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    private static final String CLAIM_ROLE = "role";
+    public static final String CLAIM_ROLE = "role";
     private static final String CLAIM_TYPE = "type";
 
     public static final String TYPE_ACCESS = "access";

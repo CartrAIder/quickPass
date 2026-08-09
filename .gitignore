@@ -1,7 +1,9 @@
-# Project-local notes
+# Project-local notes (documentation under docs/ is versioned)
 HELP.md
 *.md
-docs/
+!AGENTS.md
+!docs/
+!docs/**/*.md
 
 ### Gradle / Java ###
 .gradle/

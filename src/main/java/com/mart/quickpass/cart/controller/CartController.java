@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +33,14 @@ public class CartController {
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody CartConnectRequest request) {
         return ResponseEntity.ok(cartConnectionService.connect(userId, request));
+    }
+
+    // 앱 재실행 시 현재 사용 중인 카트와 장바구니 상태 복구
+    @GetMapping("/current")
+    public ResponseEntity<CartConnectResponse> current(@AuthenticationPrincipal Long userId) {
+        return cartConnectionService.current(userId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     // 상품 개수 조절 (증감). 조절 후 수량이 0 이하면 제거되고 204 반환

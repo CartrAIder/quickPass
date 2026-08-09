@@ -1,6 +1,7 @@
 package com.mart.quickpass.global.config;
 
 import com.mart.quickpass.global.security.JwtAuthenticationEntryPoint;
+import com.mart.quickpass.global.security.JwtAccessDeniedHandler;
 import com.mart.quickpass.global.security.jwt.JwtAuthenticationFilter;
 import com.mart.quickpass.global.security.jwt.JwtConstants;
 import com.mart.quickpass.global.security.jwt.JwtTokenProvider;
@@ -19,7 +20,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
-import com.mart.quickpass.user.repository.UserRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -28,7 +28,7 @@ public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-    private final UserRepository userRepository;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     private static final String[] PERMIT_ALL_PATTERNS = {
             "/api/users/signup",
@@ -39,8 +39,6 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/reissue",
             "/api/auth/logout",
-            "/api/auth/password-reset",
-            "/api/auth/password-reset/**",
             "/api/mobile/auth/login",
             "/api/mobile/auth/reissue",
             "/api/mobile/auth/logout",
@@ -69,13 +67,15 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(PERMIT_ALL_PATTERNS).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userRepository),
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumSet;
 import java.util.UUID;
 
 @Service
@@ -24,16 +25,24 @@ import java.util.UUID;
 public class PaymentService {
 
     private static final String TOSS_PAYMENTS = "TOSS_PAYMENTS";
+    private static final EnumSet<PaymentStatus> ACTIVE_PAYMENT_STATUSES =
+            EnumSet.of(PaymentStatus.READY, PaymentStatus.IN_PROGRESS);
 
     private final OrderRepository orderRepository;
     private final PaymentAttemptRepository paymentAttemptRepository;
     private final TossPaymentClient tossPaymentsClient;
 
+
+    // 결제 시도 생성 메서드
     @Transactional
     public PaymentAttemptCreateResponse createAttempt(Long userId, String orderId) {
+        // 주문 조회 및 상태 검사
         Order order = findOwnedOrder(userId, orderId);
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
             throw new InvalidPaymentStateException("결제를 시작할 수 없는 주문 상태입니다.");
+        }
+        if (paymentAttemptRepository.existsByOrder_IdAndStatusIn(order.getId(), ACTIVE_PAYMENT_STATUSES)) {
+            throw new InvalidPaymentStateException("이미 진행 중인 결제 시도가 있습니다.");
         }
 
         PaymentAttempt attempt = PaymentAttempt.builder()
@@ -47,6 +56,7 @@ public class PaymentService {
         return PaymentAttemptCreateResponse.from(paymentAttemptRepository.save(attempt));
     }
 
+    // 결제 승인 메서드
     @Transactional
     public PaymentConfirmResponse confirm(Long userId, PaymentConfirmRequest request) {
         Order order = findOwnedOrder(userId, request.orderId());
@@ -56,6 +66,7 @@ public class PaymentService {
         if (!attempt.getOrder().getId().equals(order.getId())) {
             throw new PaymentAttemptNotFoundException(request.paymentAttemptId());
         }
+
         // successUrl의 query string은 브라우저에서 온 값이므로 신뢰하지 않는다.
         // 승인 요청에는 항상 DB의 주문 ID/금액만 사용한다.
         if (!order.getOrderId().equals(request.orderId())
@@ -76,16 +87,18 @@ public class PaymentService {
             throw new InvalidPaymentStateException("승인할 수 없는 주문 상태입니다.");
         }
 
+        // 결제 상태를 진행중으로 변경
         attempt.markInProgress();
         paymentAttemptRepository.saveAndFlush(attempt);
 
         TossPaymentClient.TossPaymentApprovalResult result = tossPaymentsClient.approve(
                 request.paymentKey(), order.getOrderId(), order.getTotalAmount());
         if (!result.isSuccess()) {
-            attempt.markFailed(request.paymentKey(), result.failureCode(), result.failureCode(), result.failureMessage());
+            attempt.markFailed(request.paymentKey(), null, result.failureCode(), result.failureMessage());
             return PaymentConfirmResponse.from(attempt);
         }
 
+        // 토스 승인 API 호출
         TossPaymentClient.TossPaymentConfirmResponse payment = result.response();
         if (!request.paymentKey().equals(payment.paymentKey())
                 || !order.getOrderId().equals(payment.orderId())
