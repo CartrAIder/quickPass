@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+// 회원가입 요청 dto
 public record SignUpRequest(
 
         @NotBlank(message = "이메일은 필수입니다.")
