@@ -3,6 +3,11 @@ package com.mart.quickpass.global.init;
 import com.mart.quickpass.cart.entity.Cart;
 import com.mart.quickpass.cart.entity.CartStatus;
 import com.mart.quickpass.cart.repository.CartRepository;
+import com.mart.quickpass.order.entity.Order;
+import com.mart.quickpass.order.entity.OrderItem;
+import com.mart.quickpass.order.entity.OrderStatus;
+import com.mart.quickpass.order.repository.OrderItemRepository;
+import com.mart.quickpass.order.repository.OrderRepository;
 import com.mart.quickpass.product.entity.Product;
 import com.mart.quickpass.product.entity.ProductStatus;
 import com.mart.quickpass.product.repository.ProductRepository;
@@ -30,10 +35,15 @@ public class DevDataInitializer implements CommandLineRunner {
     private static final String ADMIN_EMAIL = "admin@cartraider.com";
     private static final String ADMIN_PASSWORD = "admin1234@";
     private static final String ADMIN_NAME = "관리자";
+    private static final String DEMO_ORDER_ID = "DEV-ORDER-001";
+    private static final String CANCELED_DEMO_ORDER_ID = "DEV-ORDER-002";
+    private static final String EXPIRED_DEMO_ORDER_ID = "DEV-ORDER-003";
 
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -49,6 +59,25 @@ public class DevDataInitializer implements CommandLineRunner {
 
         demoProducts().forEach(product ->
                 seedProduct(product.barcode(), product.name(), product.price(), product.category()));
+
+        seedOrder(
+                DEMO_ORDER_ID,
+                OrderStatus.PAID,
+                "8801234567890", 2,
+                "8801234567891", 1
+        );
+        seedOrder(
+                CANCELED_DEMO_ORDER_ID,
+                OrderStatus.CANCELED,
+                "8801234567892", 1,
+                "8801234567893", 3
+        );
+        seedOrder(
+                EXPIRED_DEMO_ORDER_ID,
+                OrderStatus.EXPIRED,
+                "8801234567908", 2,
+                "8801234567929", 2
+        );
     }
 
     /**
@@ -137,6 +166,59 @@ public class DevDataInitializer implements CommandLineRunner {
                 .build();
         productRepository.save(product);
         log.info("[DevData] 상품 시드 완료 - barcode={}, name={}, price={}", barcode, name, price);
+    }
+
+    private void seedOrder(
+            String orderId,
+            OrderStatus status,
+            String firstProductBarcode,
+            int firstProductQuantity,
+            String secondProductBarcode,
+            int secondProductQuantity
+    ) {
+        if (orderRepository.findByOrderId(orderId).isPresent()) {
+            log.info("[DevData] 주문 '{}' 이미 존재 - 시드 생략", orderId);
+            return;
+        }
+
+        User user = userRepository.findByEmail(TEST_USER_EMAIL)
+                .orElseThrow(() -> new IllegalStateException("초기 주문 사용자를 찾을 수 없습니다."));
+        Product firstProduct = getSeedProduct(firstProductBarcode);
+        Product secondProduct = getSeedProduct(secondProductBarcode);
+        long firstLineAmount = (long) firstProduct.getPrice() * firstProductQuantity;
+        long secondLineAmount = (long) secondProduct.getPrice() * secondProductQuantity;
+
+        Order order = orderRepository.save(Order.builder()
+                .orderId(orderId)
+                .user(user)
+                .orderName(firstProduct.getName() + " 외 1건")
+                .totalAmount(firstLineAmount + secondLineAmount)
+                .status(status)
+                .build());
+
+        orderItemRepository.saveAll(List.of(
+                createOrderItem(order, firstProduct, firstProductQuantity, firstLineAmount),
+                createOrderItem(order, secondProduct, secondProductQuantity, secondLineAmount)
+        ));
+        log.info("[DevData] 주문 시드 완료 - orderId={}, status={}, totalAmount={}",
+                orderId, status, order.getTotalAmount());
+    }
+
+    private Product getSeedProduct(String barcode) {
+        return productRepository.findByBarcode(barcode)
+                .orElseThrow(() -> new IllegalStateException(
+                        "초기 주문 상품을 찾을 수 없습니다. barcode=" + barcode));
+    }
+
+    private OrderItem createOrderItem(Order order, Product product, int quantity, long lineAmount) {
+        return OrderItem.builder()
+                .order(order)
+                .product(product)
+                .productName(product.getName())
+                .unitPrice(product.getPrice().longValue())
+                .quantity(quantity)
+                .lineAmount(lineAmount)
+                .build();
     }
 
     private void seedUser(String email, String rawPassword, String name, UserRole role) {
