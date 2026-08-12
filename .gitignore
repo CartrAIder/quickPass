@@ -77,6 +77,9 @@ tools/cart-simulator/
 *.crt
 *.cer
 
+# Mosquitto broker credentials (provisioned only in deployment environments)
+mosquitto/auth/password.txt
+
 ### Logs / OS ###
 *.log
 .DS_Store

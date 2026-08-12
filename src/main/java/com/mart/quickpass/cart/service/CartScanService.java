@@ -7,6 +7,7 @@ import com.mart.quickpass.cart.event.CartChangeType;
 import com.mart.quickpass.cart.event.CartChangedEvent;
 import com.mart.quickpass.cart.repository.CartItemsRepository;
 import com.mart.quickpass.cart.repository.CartRepository;
+import com.mart.quickpass.cart.repository.CartScanDeduplicationRepository;
 import com.mart.quickpass.cart.repository.CartSessionRepository;
 import com.mart.quickpass.cart.repository.CartVersionRepository;
 import com.mart.quickpass.global.config.CartSessionProperties;
@@ -32,12 +33,18 @@ public class CartScanService {
     private final CartSessionRepository cartSessionRepository;
     private final CartItemsRepository cartItemsRepository;
     private final CartVersionRepository cartVersionRepository;
+    private final CartScanDeduplicationRepository cartScanDeduplicationRepository;
     private final ProductRepository productRepository;
     private final CartSessionProperties cartSessionProperties;
     private final ApplicationEventPublisher eventPublisher;
 
     // 카트에서 발생한 바코드 스캔을 처리한다
     public void handleScan(String qrCode, CartScanMessage scan) {
+        if (scan.scanId() == null || scan.scanId().isBlank()) {
+            log.warn("[CartScan] scanId가 없는 스캔 메시지 - qrCode={}", qrCode);
+            return;
+        }
+
         if (cartRepository.findByQrCode(qrCode).isEmpty()) {
             // 등록되지 않은 카트에서 온 메시지는 무시한다 (오작동/장난 발행 방어)
             log.warn("[CartScan] 등록되지 않은 카트 - qrCode={}", qrCode);
@@ -58,6 +65,13 @@ public class CartScanService {
             return;
         }
 
+        // QoS 1 재전송을 원자적으로 선점해 같은 실제 스캔의 수량 중복 증가를 막는다.
+        if (!cartScanDeduplicationRepository.tryMarkProcessed(
+                qrCode, scan.scanId(), cartSessionProperties.ttl())) {
+            log.info("[CartScan] 중복 스캔 메시지 무시 - qrCode={}, scanId={}", qrCode, scan.scanId());
+            return;
+        }
+
         addOrIncrementItem(qrCode, product);
 
         // 점유 세션, 아이템 세션의 ttl을 초기화
@@ -71,7 +85,8 @@ public class CartScanService {
         eventPublisher.publishEvent(
                 CartChangedEvent.of(session.get().userId(), qrCode, CartChangeType.UPDATED, version));
 
-        log.info("[CartScan] qrCode={}, barcode={}, scannedAt={}", qrCode, scan.barcode(), scan.scannedAt());
+        log.info("[CartScan] qrCode={}, scanId={}, barcode={}, scannedAt={}",
+                qrCode, scan.scanId(), scan.barcode(), scan.scannedAt());
     }
 
 
