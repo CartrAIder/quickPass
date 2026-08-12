@@ -1,0 +1,9 @@
+# QuickPass MQTT ACL
+#
+# backend: 모든 카트의 스캔 토픽을 구독한다.
+user backend
+topic read quickpass/cart/+/scan
+
+# 카트 계정은 자기 사용자명과 일치하는 카트 토픽에만 발행할 수 있다.
+# 예: username=cart-001 -> quickpass/cart/cart-001/scan
+pattern write quickpass/cart/%u/scan
