@@ -40,6 +40,7 @@ public class UserWithdrawalService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final CartSseService cartSseService;
 
+    // 회원 탈퇴 메서드
     @Transactional
     public void withdraw(Long userId, WithdrawUserRequest request) {
         User user = userRepository.findById(userId)

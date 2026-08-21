@@ -3,11 +3,9 @@ package com.mart.quickpass.global.security.jwt;
 import com.mart.quickpass.global.config.JwtProperties;
 import com.mart.quickpass.user.entity.UserRole;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -45,8 +43,9 @@ public class JwtTokenProvider {
         try {
             Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
             return true;
-        } catch (ExpiredJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
-            log.warn("유효하지 않은 JWT 토큰입니다: {}", e.getMessage());
+        } catch (JwtException | IllegalArgumentException e) {
+            // 클라이언트 입력 오류이므로 원문 토큰 없이 낮은 로그 수준으로 기록한다.
+            log.debug("JWT 검증 실패: type={}", e.getClass().getSimpleName());
             return false;
         }
     }

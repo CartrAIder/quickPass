@@ -27,6 +27,7 @@ public class UserService {
             throw new DuplicateEmailException(request.email());
         }
 
+        // 이메일 인증 여부 검사
         emailVerificationService.requireVerified(request.email());
 
         User user = User.builder()
@@ -37,6 +38,6 @@ public class UserService {
                 .build();
 
         userRepository.save(user);
-        emailVerificationService.consumeVerification(request.email());
+        emailVerificationService.consumeVerification(request.email()); // 이메일 인증 기록 삭제
     }
 }

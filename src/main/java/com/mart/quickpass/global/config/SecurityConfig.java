@@ -31,6 +31,7 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final UserRepository userRepository;
+    private final AuthCorsProperties authCorsProperties;
 
     private static final String[] PERMIT_ALL_PATTERNS = {
             "/api/users/signup",
@@ -85,12 +86,12 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // 개발 단계 임시 설정, 배포 시 프론트 도메인 기준으로 좁힐
-    private CorsConfigurationSource corsConfigurationSource() {
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(List.of("*"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedOrigins(authCorsProperties.allowedOrigins());
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         // 로그인 응답의 Access Token 헤더를 크로스오리진 JS가 읽을 수 있도록 노출
         configuration.setExposedHeaders(List.of(JwtConstants.AUTHORIZATION_HEADER));
         configuration.setAllowCredentials(true);
