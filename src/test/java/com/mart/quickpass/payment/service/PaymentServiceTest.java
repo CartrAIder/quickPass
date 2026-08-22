@@ -112,6 +112,7 @@ class PaymentServiceTest {
         assertThat(response.status()).isEqualTo(PaymentStatus.APPROVED);
         assertThat(attempt.getStatus()).isEqualTo(PaymentStatus.APPROVED);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+        assertThat(order.getPaidAt()).isNotNull();
         verify(cartConnectionService).completePayment(1L, order.getCart());
     }
 

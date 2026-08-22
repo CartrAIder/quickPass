@@ -78,6 +78,9 @@ public class Order {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt; // 주문 업데이트 시간
 
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt; // 결제 완료 시간
+
     @Version
     @Column(nullable = false)
     private Long version; // 버전 번호(낙관적 락)
@@ -90,7 +93,8 @@ public class Order {
             String orderName,
             Long totalAmount,
             OrderStatus status,
-            LocalDateTime expiresAt
+            LocalDateTime expiresAt,
+            LocalDateTime paidAt
     ) {
         this.orderId = orderId;
         this.user = user;
@@ -98,10 +102,12 @@ public class Order {
         this.orderName = orderName;
         this.totalAmount = totalAmount;
         this.status = status;
+        this.paidAt = paidAt;
     }
 
     public void markPaid() {
         this.status = OrderStatus.PAID;
+        this.paidAt = LocalDateTime.now();
     }
 
     public void expire() {

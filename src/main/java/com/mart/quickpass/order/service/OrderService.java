@@ -17,6 +17,9 @@ import com.mart.quickpass.order.dto.OrderCreateItemRequest;
 import com.mart.quickpass.order.dto.OrderCreateRequest;
 import com.mart.quickpass.order.dto.OrderCreateResponse;
 import com.mart.quickpass.order.dto.OrderCreateResult;
+import com.mart.quickpass.order.dto.OrderDetailResponse;
+import com.mart.quickpass.order.dto.OrderHistoryItemResponse;
+import com.mart.quickpass.order.dto.OrderHistoryResponse;
 import com.mart.quickpass.order.entity.Order;
 import com.mart.quickpass.order.entity.OrderItem;
 import com.mart.quickpass.order.entity.OrderStatus;
@@ -30,6 +33,8 @@ import com.mart.quickpass.payment.entity.PaymentStatus;
 import com.mart.quickpass.user.entity.User;
 import com.mart.quickpass.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +49,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class OrderService {
+
+    private static final List<OrderStatus> PURCHASE_HISTORY_STATUSES =
+            List.of(OrderStatus.PAID, OrderStatus.CANCELED);
 
     private static final int ORDER_NAME_MAX_LENGTH = 100;
 
@@ -151,6 +159,32 @@ public class OrderService {
         paymentAttemptRepository.findAllByOrder_IdAndStatus(order.getId(), PaymentStatus.READY)
                 .forEach(attempt -> attempt.cancel());
         order.expire();
+    }
+
+    @Transactional(readOnly = true)
+    public OrderHistoryResponse findMyPurchaseHistory(Long userId, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "paidAt")
+                .and(Sort.by(Sort.Direction.DESC, "id"));
+        PageRequest pageable = PageRequest.of(page, size, sort);
+
+        return OrderHistoryResponse.from(orderRepository.findPurchaseHistory(
+                userId, PURCHASE_HISTORY_STATUSES, pageable).map(OrderHistoryItemResponse::from));
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDetailResponse findMyPurchaseDetail(Long userId, String orderId) {
+        Order order = orderRepository.findByOrderIdAndUserIdAndStatusIn(
+                        orderId, userId, PURCHASE_HISTORY_STATUSES)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        var payment = paymentAttemptRepository
+                .findFirstByOrder_IdAndStatusOrderByIdDesc(order.getId(), PaymentStatus.APPROVED)
+                .orElseThrow(() -> new InvalidPaymentStateException("승인된 결제 정보가 없는 구매 주문입니다."));
+
+        return OrderDetailResponse.of(
+                order,
+                orderItemRepository.findAllByOrderIdOrderByIdAsc(order.getId()),
+                payment
+        );
     }
 
     // 상품 중복 검사 메서드
