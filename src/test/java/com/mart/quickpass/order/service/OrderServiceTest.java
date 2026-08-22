@@ -8,7 +8,10 @@ import com.mart.quickpass.cart.repository.CartSessionRepository;
 import com.mart.quickpass.order.dto.OrderCreateItemRequest;
 import com.mart.quickpass.order.dto.OrderCreateRequest;
 import com.mart.quickpass.order.dto.OrderCreateResult;
+import com.mart.quickpass.order.dto.OrderDetailResponse;
+import com.mart.quickpass.order.dto.OrderHistoryResponse;
 import com.mart.quickpass.order.entity.Order;
+import com.mart.quickpass.order.entity.OrderItem;
 import com.mart.quickpass.order.entity.OrderStatus;
 import com.mart.quickpass.order.repository.OrderItemRepository;
 import com.mart.quickpass.order.repository.OrderRepository;
@@ -24,8 +27,12 @@ import com.mart.quickpass.user.entity.UserRole;
 import com.mart.quickpass.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -150,6 +157,107 @@ class OrderServiceTest {
                 .hasMessageContaining("승인");
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+    }
+
+    @Test
+    void returnsOnlyPurchaseHistoryInPaidAtDescendingOrderWithHasNext() {
+        LocalDateTime paidAt = LocalDateTime.of(2026, 8, 22, 14, 30);
+        Order paidOrder = Order.builder()
+                .orderId("paid-order")
+                .user(user)
+                .cart(cart)
+                .orderName("우유 외 1건")
+                .totalAmount(7500L)
+                .status(OrderStatus.PAID)
+                .paidAt(paidAt)
+                .build();
+        Sort expectedSort = Sort.by(Sort.Direction.DESC, "paidAt")
+                .and(Sort.by(Sort.Direction.DESC, "id"));
+        PageRequest pageable = PageRequest.of(0, 20, expectedSort);
+        when(orderRepository.findPurchaseHistory(
+                1L, List.of(OrderStatus.PAID, OrderStatus.CANCELED), pageable))
+                .thenReturn(new SliceImpl<>(List.of(paidOrder), pageable, true));
+
+        OrderHistoryResponse result = orderService.findMyPurchaseHistory(1L, 0, 20);
+
+        assertThat(result.orders()).singleElement().satisfies(order -> {
+            assertThat(order.orderId()).isEqualTo("paid-order");
+            assertThat(order.orderName()).isEqualTo("우유 외 1건");
+            assertThat(order.totalAmount()).isEqualTo(7500L);
+            assertThat(order.purchasedAt()).isEqualTo(paidAt);
+            assertThat(order.status()).isEqualTo(OrderStatus.PAID);
+        });
+        assertThat(result.hasNext()).isTrue();
+    }
+
+    @Test
+    void returnsOwnedPurchaseWithOrderItemSnapshotAndApprovedPayment() {
+        LocalDateTime purchasedAt = LocalDateTime.of(2026, 8, 22, 14, 30);
+        LocalDateTime approvedAt = LocalDateTime.of(2026, 8, 22, 14, 31);
+        Order order = Order.builder()
+                .orderId("paid-order")
+                .user(user)
+                .cart(cart)
+                .orderName("우유")
+                .totalAmount(6000L)
+                .status(OrderStatus.PAID)
+                .paidAt(purchasedAt)
+                .build();
+        ReflectionTestUtils.setField(order, "id", 20L);
+        Product product = product(100L, "현재 상품명", 4500);
+        OrderItem orderItem = OrderItem.builder()
+                .order(order)
+                .product(product)
+                .productName("구매 당시 우유")
+                .unitPrice(3000L)
+                .quantity(2)
+                .lineAmount(6000L)
+                .build();
+        PaymentAttempt approvedPayment = PaymentAttempt.builder()
+                .paymentAttemptId("attempt-approved")
+                .order(order)
+                .provider("TOSS_PAYMENTS")
+                .method("카드")
+                .requestedAmount(6000L)
+                .approvedAmount(6000L)
+                .status(PaymentStatus.APPROVED)
+                .approvedAt(approvedAt)
+                .build();
+        when(orderRepository.findByOrderIdAndUserIdAndStatusIn(
+                "paid-order", 1L, List.of(OrderStatus.PAID, OrderStatus.CANCELED)))
+                .thenReturn(Optional.of(order));
+        when(orderItemRepository.findAllByOrderIdOrderByIdAsc(20L)).thenReturn(List.of(orderItem));
+        when(paymentAttemptRepository.findFirstByOrder_IdAndStatusOrderByIdDesc(20L, PaymentStatus.APPROVED))
+                .thenReturn(Optional.of(approvedPayment));
+
+        OrderDetailResponse result = orderService.findMyPurchaseDetail(1L, "paid-order");
+
+        assertThat(result.orderId()).isEqualTo("paid-order");
+        assertThat(result.purchasedAt()).isEqualTo(purchasedAt);
+        assertThat(result.status()).isEqualTo(OrderStatus.PAID);
+        assertThat(result.totalAmount()).isEqualTo(6000L);
+        assertThat(result.items()).singleElement().satisfies(item -> {
+            assertThat(item.productName()).isEqualTo("구매 당시 우유");
+            assertThat(item.unitPrice()).isEqualTo(3000L);
+            assertThat(item.quantity()).isEqualTo(2);
+            assertThat(item.lineAmount()).isEqualTo(6000L);
+        });
+        assertThat(result.payment().status()).isEqualTo(PaymentStatus.APPROVED);
+        assertThat(result.payment().method()).isEqualTo("카드");
+        assertThat(result.payment().amount()).isEqualTo(6000L);
+        assertThat(result.payment().approvedAt()).isEqualTo(approvedAt);
+    }
+
+    @Test
+    void treatsUnownedOrNonPurchaseOrderAsNotFound() {
+        when(orderRepository.findByOrderIdAndUserIdAndStatusIn(
+                "hidden-order", 1L, List.of(OrderStatus.PAID, OrderStatus.CANCELED)))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.findMyPurchaseDetail(1L, "hidden-order"))
+                .isInstanceOf(com.mart.quickpass.global.exception.OrderNotFoundException.class);
+
+        verify(orderItemRepository, never()).findAllByOrderIdOrderByIdAsc(any());
     }
 
     private Order pendingOrder(String orderId) {

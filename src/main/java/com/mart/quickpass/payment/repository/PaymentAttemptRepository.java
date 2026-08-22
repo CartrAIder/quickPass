@@ -20,4 +20,6 @@ public interface PaymentAttemptRepository extends JpaRepository<PaymentAttempt, 
             Long orderId, Collection<PaymentStatus> statuses);
 
     List<PaymentAttempt> findAllByOrder_IdAndStatus(Long orderId, PaymentStatus status);
+
+    Optional<PaymentAttempt> findFirstByOrder_IdAndStatusOrderByIdDesc(Long orderId, PaymentStatus status);
 }

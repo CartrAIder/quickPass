@@ -21,6 +21,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.List;
 // 개발용 초기 데이터
 @Slf4j
@@ -198,6 +199,9 @@ public class DevDataInitializer implements CommandLineRunner {
                 .orderName(firstProduct.getName() + " 외 1건")
                 .totalAmount(firstLineAmount + secondLineAmount)
                 .status(status)
+                .paidAt(status == OrderStatus.PAID || status == OrderStatus.CANCELED
+                        ? LocalDateTime.now()
+                        : null)
                 .build());
 
         orderItemRepository.saveAll(List.of(
