@@ -31,7 +31,6 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final UserRepository userRepository;
-    private final AuthCorsProperties authCorsProperties;
 
     private static final String[] PERMIT_ALL_PATTERNS = {
             "/api/users/signup",
