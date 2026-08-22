@@ -32,20 +32,32 @@ public class Product {
     @Column(nullable = false)
     private Integer price; // 상품 가격
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String category; // 카테고리
+    private ProductCategory category; // 카테고리
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ProductStatus status; // 상태
 
+    @Column(length = 2048)
+    private String imageUrl; // 대표 이미지 URL
+
     @Builder
-    public Product(String barcode, String name, Integer price, String category, ProductStatus status) {
+    public Product(
+            String barcode,
+            String name,
+            Integer price,
+            ProductCategory category,
+            ProductStatus status,
+            String imageUrl
+    ) {
         this.barcode = barcode;
         this.name = name;
         this.price = price;
         this.category = category;
         this.status = status;
+        this.imageUrl = imageUrl;
     }
 
     public void changePrice(Integer price) {
@@ -58,5 +70,9 @@ public class Product {
 
     public void changeBarcode(String barcode) {
         this.barcode = barcode;
+    }
+
+    public void changeImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

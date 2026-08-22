@@ -1,6 +1,7 @@
 package com.mart.quickpass.user.controller;
 
 import com.mart.quickpass.user.dto.SignUpRequest;
+import com.mart.quickpass.user.dto.UserResponse;
 import com.mart.quickpass.user.dto.WithdrawUserRequest;
 import com.mart.quickpass.user.service.UserService;
 import com.mart.quickpass.user.service.UserWithdrawalService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -28,6 +30,11 @@ public class UserController {
     private final UserService userService;
     private final UserWithdrawalService userWithdrawalService;
     private final AuthCookieProperties authCookieProperties;
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getMyInfo(@AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(userService.getMyInfo(userId));
+    }
 
     // 회원가입 컨트롤러
     @PostMapping("/signup")

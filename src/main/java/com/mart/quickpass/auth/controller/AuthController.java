@@ -1,12 +1,13 @@
 package com.mart.quickpass.auth.controller;
 
-import com.mart.quickpass.auth.dto.AuthTokens;
+import com.mart.quickpass.auth.dto.AuthResult;
 import com.mart.quickpass.auth.dto.ChangePasswordRequest;
 import com.mart.quickpass.auth.dto.LoginRequest;
 import com.mart.quickpass.auth.dto.LoginResponse;
 import com.mart.quickpass.auth.service.AuthService;
 import com.mart.quickpass.global.config.AuthCookieProperties;
 import com.mart.quickpass.global.config.JwtProperties;
+import com.mart.quickpass.global.exception.InvalidTokenException;
 import com.mart.quickpass.global.security.jwt.JwtConstants;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -36,7 +37,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
         // 로그인 후 토큰 반환
-        AuthTokens tokens = authService.login(request);
+        AuthResult tokens = authService.login(request);
         setTokenResponse(response, tokens);
 
         return ResponseEntity.ok(new LoginResponse(tokens.name()));
@@ -45,9 +46,12 @@ public class AuthController {
     // 토큰 재발급 컨트롤러 - 쿠키의 리프레시 토큰으로 Access/Refresh 토큰 모두 재발급
     @PostMapping("/reissue")
     public ResponseEntity<Void> reissue(
-            @CookieValue(JwtConstants.REFRESH_TOKEN_COOKIE_NAME) String refreshToken,
+            @CookieValue(value = JwtConstants.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken,
             HttpServletResponse response) {
-        AuthTokens tokens = authService.reissue(refreshToken);
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new InvalidTokenException();
+        }
+        AuthResult tokens = authService.reissue(refreshToken);
         setTokenResponse(response, tokens);
 
         return ResponseEntity.ok().build();
@@ -56,9 +60,11 @@ public class AuthController {
     // 로그아웃 컨트롤러 - 저장된 리프레시 토큰 삭제 및 쿠키 만료
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
-            @CookieValue(JwtConstants.REFRESH_TOKEN_COOKIE_NAME) String refreshToken,
+            @CookieValue(value = JwtConstants.REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken,
             HttpServletResponse response) {
-        authService.logout(refreshToken);
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            authService.logout(refreshToken);
+        }
         response.addHeader(HttpHeaders.SET_COOKIE, expireRefreshTokenCookie().toString());
 
         return ResponseEntity.ok().build();
@@ -70,14 +76,14 @@ public class AuthController {
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody ChangePasswordRequest request,
             HttpServletResponse response) {
-        AuthTokens tokens = authService.changePassword(userId, request);
+        AuthResult tokens = authService.changePassword(userId, request);
         setTokenResponse(response, tokens);
 
         return ResponseEntity.ok().build();
     }
 
     // 웹: Access Token은 헤더, Refresh Token은 HttpOnly 쿠키로만 전달
-    private void setTokenResponse(HttpServletResponse response, AuthTokens tokens) {
+    private void setTokenResponse(HttpServletResponse response, AuthResult tokens) {
         response.setHeader(HttpHeaders.AUTHORIZATION, JwtConstants.TOKEN_PREFIX + tokens.accessToken());
         response.addHeader(HttpHeaders.SET_COOKIE, buildRefreshTokenCookie(tokens.refreshToken()).toString());
     }

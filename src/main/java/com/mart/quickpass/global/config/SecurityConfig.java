@@ -46,6 +46,9 @@ public class SecurityConfig {
             "/api/mobile/auth/login",
             "/api/mobile/auth/reissue",
             "/api/mobile/auth/logout",
+            // 고객 상품 탐색은 로그인 없이 사용할 수 있다.
+            "/api/products",
+            "/api/products/**",
             // SSE 구독은 액세스 토큰 대신 단명 티켓으로 인증한다(컨트롤러에서 검증). 티켓 발급(/sse-ticket)은 인증 필요.
             "/api/carts/subscribe",
             // 토스 결제 완료 후 successUrl/failUrl로 브라우저가 직접 이동한다.
@@ -85,12 +88,12 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // 개발 단계 임시 설정, 배포 시 프론트 도메인 기준으로 좁힐
-    private CorsConfigurationSource corsConfigurationSource() {
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(List.of("*"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedOrigins(authCorsProperties.allowedOrigins());
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         // 로그인 응답의 Access Token 헤더를 크로스오리진 JS가 읽을 수 있도록 노출
         configuration.setExposedHeaders(List.of(JwtConstants.AUTHORIZATION_HEADER));
         configuration.setAllowCredentials(true);

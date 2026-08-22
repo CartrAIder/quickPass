@@ -1,8 +1,9 @@
 package com.mart.quickpass.auth.service;
 
-import com.mart.quickpass.auth.dto.AuthTokens;
+import com.mart.quickpass.auth.dto.AuthResult;
 import com.mart.quickpass.auth.dto.ChangePasswordRequest;
 import com.mart.quickpass.auth.dto.LoginRequest;
+import com.mart.quickpass.auth.event.PasswordChangedEvent;
 import com.mart.quickpass.auth.repository.RefreshTokenRepository;
 import com.mart.quickpass.global.exception.CurrentPasswordMismatchException;
 import com.mart.quickpass.global.exception.InvalidCredentialsException;
@@ -12,6 +13,7 @@ import com.mart.quickpass.global.security.jwt.JwtTokenProvider;
 import com.mart.quickpass.user.entity.User;
 import com.mart.quickpass.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,10 +26,11 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     // 로그인 메서드
     @Transactional(readOnly = true)
-    public AuthTokens login(LoginRequest request) {
+    public AuthResult login(LoginRequest request) {
         // 이메일 기반 유저 탐색
         User user = userRepository.findByEmail(request.email())
                 .filter(User::isActive)
@@ -41,8 +44,8 @@ public class AuthService {
         return issueTokens(user);
     }
 
-    // 토큰 재발급 메서드 (엑세스/리프레쉬 대상)
-    public AuthTokens reissue(String refreshToken) {
+    // 토큰 재발급 메서드
+    public AuthResult reissue(String refreshToken) {
         // 유효하고, 타입이 refresh인 토큰만 허용
         if (!jwtTokenProvider.validateToken(refreshToken) || !jwtTokenProvider.isRefreshToken(refreshToken)) {
             throw new InvalidTokenException();
@@ -50,56 +53,62 @@ public class AuthService {
 
         Long userId = jwtTokenProvider.getUserId(refreshToken);
 
-        String storedToken = refreshTokenRepository.findByUserId(userId)
-                .orElseThrow(InvalidTokenException::new);
-
-        // 쿠키의 토큰과 저장된 토큰이 다르면 탈취 가능성 있음 → 저장된 토큰 무효화
-        if (!storedToken.equals(refreshToken)) {
-            refreshTokenRepository.deleteByUserId(userId);
-            throw new InvalidTokenException();
-        }
-
         User user = userRepository.findById(userId)
                 .filter(User::isActive)
                 .orElseThrow(InvalidTokenException::new);
 
-        // 기존 리프레시 토큰을 새 토큰으로 교체하여 재발급
-        return issueTokens(user);
+        AuthResult newTokens = createTokens(user);
+        if (!refreshTokenRepository.rotateIfMatches(userId, refreshToken, newTokens.refreshToken())) {
+            throw new InvalidTokenException();
+        }
+
+        return newTokens;
     }
 
     // 로그아웃 메서드 - 저장된 리프레시 토큰 삭제
     public void logout(String refreshToken) {
         if (!jwtTokenProvider.validateToken(refreshToken) || !jwtTokenProvider.isRefreshToken(refreshToken)) {
-            return;
+            throw new InvalidTokenException();
         }
 
         Long userId = jwtTokenProvider.getUserId(refreshToken);
-        refreshTokenRepository.deleteByUserId(userId);
+        if (!refreshTokenRepository.deleteIfMatches(userId, refreshToken)) {
+            throw new InvalidTokenException();
+        }
     }
 
+    // 비밀번호 변경 메서드(로그인 후 변경)
     @Transactional
-    public AuthTokens changePassword(Long userId, ChangePasswordRequest request) {
+    public AuthResult changePassword(Long userId, ChangePasswordRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
+        // 기존의 비밀번호가 사용자의 입력과 일치하는지 확인
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
             throw new CurrentPasswordMismatchException();
         }
 
+        // 새 비밀번호 적용
         user.changePassword(passwordEncoder.encode(request.newPassword()));
 
-        // 기존 Refresh Token을 제거한 뒤 새로운 토큰 쌍으로 교체한다.
-        refreshTokenRepository.deleteByUserId(userId);
-        return issueTokens(user);
+        // 새로운 jwt 발급 및 Refresh Token 교체 이벤트 발행
+        AuthResult tokens = createTokens(user);
+        eventPublisher.publishEvent(new PasswordChangedEvent(userId, tokens.refreshToken()));
+        return tokens;
     }
 
     // 토큰 발급 및 리프레시 토큰 저장 메서드
-    private AuthTokens issueTokens(User user) {
+    private AuthResult issueTokens(User user) {
+        AuthResult tokens = createTokens(user);
+        refreshTokenRepository.save(user.getId(), tokens.refreshToken());
+        return tokens;
+    }
+
+    // 토큰 생성 메서드
+    private AuthResult createTokens(User user) {
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId());
 
-        refreshTokenRepository.save(user.getId(), refreshToken);
-
-        return new AuthTokens(accessToken, refreshToken, user.getName());
+        return new AuthResult(accessToken, refreshToken, user.getName());
     }
 }
