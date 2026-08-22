@@ -6,6 +6,8 @@ import com.mart.quickpass.cart.dto.CartSnapshotResponse;
 import com.mart.quickpass.cart.dto.CheckoutStatus;
 import com.mart.quickpass.cart.entity.Cart;
 import com.mart.quickpass.cart.entity.CartStatus;
+import com.mart.quickpass.cart.event.CartChangeType;
+import com.mart.quickpass.cart.event.CartChangedEvent;
 import com.mart.quickpass.cart.repository.CartItemsRepository;
 import com.mart.quickpass.cart.repository.CartRepository;
 import com.mart.quickpass.cart.repository.CartSessionRepository;
@@ -19,6 +21,7 @@ import com.mart.quickpass.user.entity.User;
 import com.mart.quickpass.user.entity.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -118,5 +121,21 @@ class CartConnectionServiceTest {
 
         verify(cartItemsRepository, never()).deleteAll("cart_001");
         verify(cartSessionRepository, never()).deleteByQrCode("cart_001");
+    }
+
+    @Test
+    void paymentCompletionClearsCartOwnershipAndPublishesClosedEvent() {
+        when(cartVersionRepository.increment("cart_001")).thenReturn(4L);
+
+        service.completePayment(1L, cart);
+
+        assertThat(cart.getStatus()).isEqualTo(CartStatus.WAITING);
+        verify(cartItemsRepository).deleteAll("cart_001");
+        verify(cartSessionRepository).deleteByQrCode("cart_001");
+        verify(cartSessionRepository).deleteUserCart(1L);
+        ArgumentCaptor<CartChangedEvent> eventCaptor = ArgumentCaptor.forClass(CartChangedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().type()).isEqualTo(CartChangeType.CLOSED);
+        assertThat(eventCaptor.getValue().version()).isEqualTo(4L);
     }
 }
