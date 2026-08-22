@@ -11,6 +11,7 @@ import com.mart.quickpass.global.exception.CartItemNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -28,8 +29,9 @@ public class CartItemService {
     private final ApplicationEventPublisher eventPublisher;
 
     // 상품 수량 증감 메서드
+    @Transactional
     public Optional<CartItem> adjustQuantity(Long userId, String qrCode, String barcode, long delta) {
-        cartSessionGuard.requireOwnedSession(userId, qrCode);
+        cartSessionGuard.requireShoppingSession(userId, qrCode);
 
         CartItem current = cartItemsRepository.findItem(qrCode, barcode)
                 .orElseThrow(() -> new CartItemNotFoundException(barcode));
@@ -52,8 +54,9 @@ public class CartItemService {
     }
 
     // 장바구니 물건 제거 메서드
+    @Transactional
     public void removeItem(Long userId, String qrCode, String barcode) {
-        cartSessionGuard.requireOwnedSession(userId, qrCode);
+        cartSessionGuard.requireShoppingSession(userId, qrCode);
 
         cartItemsRepository.deleteItem(qrCode, barcode);
 

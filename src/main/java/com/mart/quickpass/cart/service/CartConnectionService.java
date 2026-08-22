@@ -4,6 +4,7 @@ import com.mart.quickpass.cart.dto.CartConnectRequest;
 import com.mart.quickpass.cart.dto.CartConnectResponse;
 import com.mart.quickpass.cart.dto.CartSession;
 import com.mart.quickpass.cart.dto.CartConnectionType;
+import com.mart.quickpass.cart.dto.PendingOrderResponse;
 import com.mart.quickpass.cart.entity.Cart;
 import com.mart.quickpass.cart.event.CartChangeType;
 import com.mart.quickpass.cart.event.CartChangedEvent;
@@ -15,6 +16,8 @@ import com.mart.quickpass.cart.repository.CartVersionRepository;
 import com.mart.quickpass.global.config.CartSessionProperties;
 import com.mart.quickpass.global.exception.CartAlreadyInUseException;
 import com.mart.quickpass.global.exception.CartNotFoundException;
+import com.mart.quickpass.order.entity.OrderStatus;
+import com.mart.quickpass.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -35,6 +38,7 @@ public class CartConnectionService {
     private final CartSessionGuard cartSessionGuard;
     private final CartSnapshotService cartSnapshotService;
     private final ApplicationEventPublisher eventPublisher;
+    private final OrderRepository orderRepository;
 
     // 카트 연결 메서드
     @Transactional
@@ -64,7 +68,7 @@ public class CartConnectionService {
         eventPublisher.publishEvent(
                 CartChangedEvent.of(userId, qrCode, changeType, version));
 
-        return response(cart, claimResult == CartClaimResult.CREATED
+        return response(userId, cart, claimResult == CartClaimResult.CREATED
                 ? CartConnectionType.CREATED : CartConnectionType.RESUMED, version);
     }
 
@@ -86,7 +90,7 @@ public class CartConnectionService {
         cartSessionRepository.refreshUserTtl(userId, ttl);
         cartItemsRepository.refreshTtl(qrCode.get(), ttl);
         cartVersionRepository.refreshTtl(qrCode.get(), ttl);
-        return Optional.of(response(cart, CartConnectionType.RESUMED,
+        return Optional.of(response(userId, cart, CartConnectionType.RESUMED,
                 cartVersionRepository.current(qrCode.get())));
     }
 
@@ -94,7 +98,7 @@ public class CartConnectionService {
     @Transactional
     public void disconnect(Long userId, String qrCode) {
         // 유저 일치 여부 확인
-        cartSessionGuard.requireOwnedSession(userId, qrCode);
+        cartSessionGuard.requireShoppingSession(userId, qrCode);
 
         // 카트 탐색 후 redis의 정보 지우기
         Cart cart = cartRepository.findByQrCode(qrCode)
@@ -130,8 +134,12 @@ public class CartConnectionService {
         disconnect(userId, qrCode.get());
     }
 
-    private CartConnectResponse response(Cart cart, CartConnectionType type, long version) {
+    private CartConnectResponse response(Long userId, Cart cart, CartConnectionType type, long version) {
+        PendingOrderResponse pendingOrder = orderRepository.findByUserIdAndCartIdAndStatus(
+                        userId, cart.getId(), OrderStatus.PENDING_PAYMENT)
+                .map(PendingOrderResponse::from)
+                .orElse(null);
         return CartConnectResponse.of(
-                cart, type, cartSnapshotService.snapshot(cart.getQrCode(), version));
+                cart, type, cartSnapshotService.snapshot(cart.getQrCode(), version), pendingOrder);
     }
 }

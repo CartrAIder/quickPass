@@ -1,13 +1,22 @@
 package com.mart.quickpass.order.service;
 
+import com.mart.quickpass.cart.dto.CartSession;
+import com.mart.quickpass.cart.entity.Cart;
+import com.mart.quickpass.cart.repository.CartRepository;
+import com.mart.quickpass.cart.repository.CartSessionRepository;
+import com.mart.quickpass.global.exception.CartSessionNotFoundException;
 import com.mart.quickpass.global.exception.DuplicateOrderProductException;
 import com.mart.quickpass.global.exception.InvalidProductPriceException;
+import com.mart.quickpass.global.exception.InvalidPaymentStateException;
+import com.mart.quickpass.global.exception.OrderAccessDeniedException;
+import com.mart.quickpass.global.exception.OrderNotFoundException;
 import com.mart.quickpass.global.exception.ProductNotFoundException;
 import com.mart.quickpass.global.exception.ProductNotOnSaleException;
 import com.mart.quickpass.global.exception.UserNotFoundException;
 import com.mart.quickpass.order.dto.OrderCreateItemRequest;
 import com.mart.quickpass.order.dto.OrderCreateRequest;
 import com.mart.quickpass.order.dto.OrderCreateResponse;
+import com.mart.quickpass.order.dto.OrderCreateResult;
 import com.mart.quickpass.order.entity.Order;
 import com.mart.quickpass.order.entity.OrderItem;
 import com.mart.quickpass.order.entity.OrderStatus;
@@ -16,6 +25,8 @@ import com.mart.quickpass.order.repository.OrderRepository;
 import com.mart.quickpass.product.entity.Product;
 import com.mart.quickpass.product.entity.ProductStatus;
 import com.mart.quickpass.product.repository.ProductRepository;
+import com.mart.quickpass.payment.repository.PaymentAttemptRepository;
+import com.mart.quickpass.payment.entity.PaymentStatus;
 import com.mart.quickpass.user.entity.User;
 import com.mart.quickpass.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,13 +51,39 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final CartSessionRepository cartSessionRepository;
+    private final CartRepository cartRepository;
+    private final PaymentAttemptRepository paymentAttemptRepository;
 
     // 주문 생성 메서드
     @Transactional
-    public OrderCreateResponse create(Long userId, OrderCreateRequest request) {
-        // 사용자 조회
-        User user = userRepository.findById(userId)
+    public OrderCreateResult create(Long userId, OrderCreateRequest request) {
+        String qrCode = cartSessionRepository.findQrCodeByUserId(userId)
+                .orElseThrow(() -> new CartSessionNotFoundException("current"));
+        CartSession session = cartSessionRepository.findByQrCode(qrCode)
+                .orElseThrow(() -> new CartSessionNotFoundException(qrCode));
+        if (!session.userId().equals(userId)) {
+            throw new CartSessionNotFoundException(qrCode);
+        }
+        // 사용자 행을 잠가 같은 사용자의 주문 생성 요청을 직렬화한다.
+        User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
+        Cart cart = cartRepository.findByQrCodeForUpdate(qrCode)
+                .orElseThrow(() -> new CartSessionNotFoundException(qrCode));
+        // 카트 잠금을 기다리는 동안 세션이 반납될 수 있으므로 잠금 획득 후 소유권을 재검증한다.
+        CartSession lockedSession = cartSessionRepository.findByQrCode(qrCode)
+                .orElseThrow(() -> new CartSessionNotFoundException(qrCode));
+        if (!lockedSession.userId().equals(userId)) {
+            throw new CartSessionNotFoundException(qrCode);
+        }
+
+        return orderRepository.findByUserAndCartAndStatusForUpdate(
+                        userId, cart.getId(), OrderStatus.PENDING_PAYMENT)
+                .map(order -> OrderCreateResult.existing(OrderCreateResponse.from(order)))
+                .orElseGet(() -> createNew(user, cart, request));
+    }
+
+    private OrderCreateResult createNew(User user, Cart cart, OrderCreateRequest request) {
 
         // 상품 중복 등록 확인
         validateDistinctProductIds(request.items());
@@ -74,6 +111,7 @@ public class OrderService {
         Order order = Order.builder()
                 .orderId(generateExternalOrderId())
                 .user(user)
+                .cart(cart)
                 .orderName(createOrderName(itemDrafts))
                 .totalAmount(totalAmount)
                 .status(OrderStatus.PENDING_PAYMENT)
@@ -92,7 +130,27 @@ public class OrderService {
                 .toList();
         orderItemRepository.saveAll(orderItems);
 
-        return OrderCreateResponse.from(savedOrder);
+        return OrderCreateResult.created(OrderCreateResponse.from(savedOrder));
+    }
+
+    @Transactional
+    public void abandon(Long userId, String orderId) {
+        Order order = orderRepository.findByOrderIdForUpdate(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+        if (!order.getUser().getId().equals(userId)) {
+            throw new OrderAccessDeniedException();
+        }
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new InvalidPaymentStateException("포기할 수 없는 주문 상태입니다.");
+        }
+        if (paymentAttemptRepository.existsByOrder_IdAndStatusIn(
+                order.getId(), List.of(PaymentStatus.APPROVED))) {
+            throw new InvalidPaymentStateException("이미 승인된 결제가 있어 주문을 포기할 수 없습니다.");
+        }
+
+        paymentAttemptRepository.findAllByOrder_IdAndStatus(order.getId(), PaymentStatus.READY)
+                .forEach(attempt -> attempt.cancel());
+        order.expire();
     }
 
     // 상품 중복 검사 메서드
