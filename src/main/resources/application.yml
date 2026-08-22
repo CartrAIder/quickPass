@@ -26,6 +26,12 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      # multipart 경계/헤더 오버헤드를 포함해 5MB 파일을 받을 수 있도록 요청 한도는 조금 더 크게 둔다.
+      max-request-size: 6MB
+
 jwt:
   secret: ${JWT_SECRET}
   access-token-validity: 1800000    # 30분 (ms)
@@ -46,6 +52,13 @@ springdoc:
     tags-sorter: alpha                # 태그(컨트롤러) 알파벳 정렬
   api-docs:
     path: /v3/api-docs                # OpenAPI 스펙(JSON) 경로
+
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
+  access-key: ${MINIO_ROOT_USER}
+  secret-key: ${MINIO_ROOT_PASSWORD}
+  bucket: ${MINIO_BUCKET:product-images}
 
 mqtt:
   broker-url: ${MQTT_BROKER_URL}      # 내부 연결: tcp://host:1883, TLS: ssl://host:8883

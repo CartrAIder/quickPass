@@ -1,8 +1,10 @@
 package com.mart.quickpass.user.service;
 
 import com.mart.quickpass.global.exception.DuplicateEmailException;
+import com.mart.quickpass.global.exception.UserNotFoundException;
 import com.mart.quickpass.email.service.EmailVerificationService;
 import com.mart.quickpass.user.dto.SignUpRequest;
+import com.mart.quickpass.user.dto.UserResponse;
 import com.mart.quickpass.user.entity.User;
 import com.mart.quickpass.user.entity.UserRole;
 import com.mart.quickpass.user.repository.UserRepository;
@@ -18,6 +20,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
+
+    @Transactional(readOnly = true)
+    public UserResponse getMyInfo(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        return new UserResponse(user.getId(), user.getEmail(), user.getName());
+    }
 
     // 회원가입 메서드
     @Transactional

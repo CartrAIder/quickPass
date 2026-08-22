@@ -1,5 +1,6 @@
 package com.mart.quickpass.product.dto;
 
+import com.mart.quickpass.product.entity.ProductCategory;
 import com.mart.quickpass.product.entity.ProductStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,11 +22,13 @@ public record ProductCreateRequest(
         @Positive(message = "가격은 0보다 커야 합니다.")
         Integer price,
 
-        @NotBlank(message = "카테고리는 필수입니다.")
-        @Size(max = 255, message = "카테고리는 255자를 초과할 수 없습니다.")
-        String category,
+        @NotNull(message = "카테고리는 필수입니다.")
+        ProductCategory category,
 
         @NotNull(message = "판매 상태는 필수입니다.")
-        ProductStatus status
+        ProductStatus status,
+
+        @Size(max = 2048, message = "이미지 URL은 2048자를 초과할 수 없습니다.")
+        String imageUrl
 ) {
 }

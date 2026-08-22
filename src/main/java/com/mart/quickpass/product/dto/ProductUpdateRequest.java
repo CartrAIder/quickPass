@@ -16,11 +16,14 @@ public record ProductUpdateRequest(
         @Positive(message = "가격은 0보다 커야 합니다.")
         Integer price,
 
-        ProductStatus status
+        ProductStatus status,
+
+        @Size(max = 2048, message = "이미지 URL은 2048자를 초과할 수 없습니다.")
+        String imageUrl
 ) {
 
     @AssertTrue(message = "수정할 상품 정보를 하나 이상 입력해야 합니다.")
     public boolean isUpdateRequested() {
-        return barcode != null || price != null || status != null;
+        return barcode != null || price != null || status != null || imageUrl != null;
     }
 }
