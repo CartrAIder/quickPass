@@ -1,6 +1,7 @@
 package com.mart.quickpass.payment.controller;
 
 import com.mart.quickpass.payment.dto.PaymentAttemptCreateResponse;
+import com.mart.quickpass.payment.dto.PaymentAttemptCreateResult;
 import com.mart.quickpass.payment.dto.PaymentConfirmRequest;
 import com.mart.quickpass.payment.dto.PaymentConfirmResponse;
 import com.mart.quickpass.payment.entity.PaymentStatus;
@@ -30,8 +31,9 @@ public class PaymentController {
             @AuthenticationPrincipal Long userId,
             @PathVariable String orderId
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(paymentService.createAttempt(userId, orderId));
+        PaymentAttemptCreateResult result = paymentService.createAttempt(userId, orderId);
+        HttpStatus status = result.created() ? HttpStatus.CREATED : HttpStatus.OK;
+        return ResponseEntity.status(status).body(result.response());
     }
 
     // 결제 승인 컨트롤러

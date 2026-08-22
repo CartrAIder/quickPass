@@ -104,6 +104,18 @@ public class CartConnectionService {
         Cart cart = cartRepository.findByQrCode(qrCode)
                 .orElseThrow(() -> new CartNotFoundException(qrCode));
 
+        close(userId, cart);
+    }
+
+    /** 결제가 승인된 주문의 카트를 추가 사용자 요청 없이 종료한다. */
+    @Transactional
+    public void completePayment(Long userId, Cart cart) {
+        close(userId, cart);
+    }
+
+    private void close(Long userId, Cart cart) {
+        String qrCode = cart.getQrCode();
+
         cartItemsRepository.deleteAll(qrCode);
         cartSessionRepository.deleteByQrCode(qrCode);
         cartSessionRepository.deleteUserCart(userId);
