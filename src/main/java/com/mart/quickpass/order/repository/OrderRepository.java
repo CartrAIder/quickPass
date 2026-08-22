@@ -13,13 +13,28 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 import java.util.Collection;
-import com.mart.quickpass.order.entity.OrderStatus;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     boolean existsByUserIdAndStatusIn(Long userId, Collection<OrderStatus> statuses);
 
     Optional<Order> findByOrderId(String orderId);
+
+    Optional<Order> findByUserIdAndCartIdAndStatus(Long userId, Long cartId, OrderStatus status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select o from Order o
+            where o.user.id = :userId
+              and o.cart.id = :cartId
+              and o.status = :status
+            """)
+    Optional<Order> findByUserAndCartAndStatusForUpdate(
+            @Param("userId") Long userId,
+            @Param("cartId") Long cartId,
+            @Param("status") OrderStatus status);
+
+    boolean existsByCartQrCodeAndStatus(String qrCode, OrderStatus status);
 
     @EntityGraph(attributePaths = "user")
     @Query(value = """

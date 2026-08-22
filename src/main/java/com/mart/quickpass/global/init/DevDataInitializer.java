@@ -184,6 +184,8 @@ public class DevDataInitializer implements CommandLineRunner {
 
         User user = userRepository.findByEmail(TEST_USER_EMAIL)
                 .orElseThrow(() -> new IllegalStateException("초기 주문 사용자를 찾을 수 없습니다."));
+        Cart cart = cartRepository.findByQrCode(CART_001_QR)
+                .orElseThrow(() -> new IllegalStateException("초기 주문 카트를 찾을 수 없습니다."));
         Product firstProduct = getSeedProduct(firstProductBarcode);
         Product secondProduct = getSeedProduct(secondProductBarcode);
         long firstLineAmount = (long) firstProduct.getPrice() * firstProductQuantity;
@@ -192,6 +194,7 @@ public class DevDataInitializer implements CommandLineRunner {
         Order order = orderRepository.save(Order.builder()
                 .orderId(orderId)
                 .user(user)
+                .cart(cart)
                 .orderName(firstProduct.getName() + " 외 1건")
                 .totalAmount(firstLineAmount + secondLineAmount)
                 .status(status)
