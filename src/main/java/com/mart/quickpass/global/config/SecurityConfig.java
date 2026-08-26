@@ -2,6 +2,7 @@ package com.mart.quickpass.global.config;
 
 import com.mart.quickpass.global.security.JwtAuthenticationEntryPoint;
 import com.mart.quickpass.global.security.JwtAccessDeniedHandler;
+import com.mart.quickpass.global.security.GateServiceSecretFilter;
 import com.mart.quickpass.global.security.jwt.JwtAuthenticationFilter;
 import com.mart.quickpass.global.security.jwt.JwtConstants;
 import com.mart.quickpass.global.security.jwt.JwtTokenProvider;
@@ -9,6 +10,8 @@ import com.mart.quickpass.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -25,12 +28,15 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@EnableConfigurationProperties(GateProperties.class)
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final UserRepository userRepository;
+    private final GateProperties gateProperties;
+    private final ObjectMapper objectMapper;
     private final AuthCorsProperties authCorsProperties;
 
     private static final String[] PERMIT_ALL_PATTERNS = {
@@ -75,6 +81,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/internal/gate/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(PERMIT_ALL_PATTERNS).permitAll()
                         .anyRequest().authenticated()
@@ -83,6 +90,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
+                .addFilterBefore(new GateServiceSecretFilter(gateProperties, objectMapper),
+                        UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userRepository),
                         UsernamePasswordAuthenticationFilter.class);
 

@@ -16,6 +16,7 @@ public interface PaymentAttemptRepository extends JpaRepository<PaymentAttempt, 
 
     boolean existsByOrder_IdAndStatusIn(Long orderId, Collection<PaymentStatus> statuses);
 
+    boolean existsByOrder_IdAndStatus(Long orderId, PaymentStatus status);
     Optional<PaymentAttempt> findFirstByOrder_IdAndStatusInOrderByIdAsc(
             Long orderId, Collection<PaymentStatus> statuses);
 

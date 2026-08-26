@@ -5,6 +5,7 @@ import com.mart.quickpass.global.exception.InvalidPaymentStateException;
 import com.mart.quickpass.global.exception.OrderAccessDeniedException;
 import com.mart.quickpass.global.exception.OrderNotFoundException;
 import com.mart.quickpass.global.exception.PaymentAttemptNotFoundException;
+import com.mart.quickpass.gate.service.GateTokenService;
 import com.mart.quickpass.order.entity.Order;
 import com.mart.quickpass.order.entity.OrderStatus;
 import com.mart.quickpass.order.repository.OrderRepository;
@@ -33,6 +34,7 @@ public class PaymentService {
     private final OrderRepository orderRepository;
     private final PaymentAttemptRepository paymentAttemptRepository;
     private final TossPaymentClient tossPaymentsClient;
+    private final GateTokenService gateTokenService;
     private final CartConnectionService cartConnectionService;
 
 
@@ -84,7 +86,7 @@ public class PaymentService {
             if (!request.paymentKey().equals(attempt.getPaymentKey())) {
                 throw new InvalidPaymentStateException("이미 승인된 결제 시도입니다.");
             }
-            return PaymentConfirmResponse.from(attempt);
+            return PaymentConfirmResponse.from(attempt, gateTokenService.issue(order.getId()));
         }
         if (attempt.getStatus() != PaymentStatus.READY) {
             throw new InvalidPaymentStateException("승인할 수 없는 결제 시도 상태입니다.");
@@ -123,7 +125,7 @@ public class PaymentService {
         order.markPaid();
         cartConnectionService.completePayment(userId, order.getCart());
 
-        return PaymentConfirmResponse.from(attempt);
+        return PaymentConfirmResponse.from(attempt, gateTokenService.issue(order.getId()));
     }
 
     private Order findOwnedOrder(Long userId, String orderId) {
