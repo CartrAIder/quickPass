@@ -8,18 +8,24 @@ public record PaymentConfirmResponse(
         String paymentKey,
         Long approvedAmount,
         PaymentStatus status,
+        String gateToken,
         String code,
         String message
 ) {
 
-    public static PaymentConfirmResponse from(PaymentAttempt attempt) {
+    public static PaymentConfirmResponse from(PaymentAttempt attempt, String gateToken) {
         return new PaymentConfirmResponse(
                 attempt.getPaymentAttemptId(),
                 attempt.getPaymentKey(),
                 attempt.getApprovedAmount(),
                 attempt.getStatus(),
+                gateToken,
                 attempt.getFailureCode(),
                 attempt.getFailureMessage()
         );
+    }
+
+    public static PaymentConfirmResponse from(PaymentAttempt attempt) {
+        return from(attempt, null);
     }
 }

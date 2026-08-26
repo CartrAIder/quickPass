@@ -19,7 +19,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-    show-sql: true
+    show-sql: false
 
   data:
     redis:
@@ -77,3 +77,7 @@ password-reset:
   code-ttl: 10m
   token-ttl: 5m
   resend-cooldown: 1m
+
+gate:
+  # AI Server만 알고 있는 내부 API 인증 Secret. 저장소에는 실제 값을 넣지 않는다.
+  service-secret: ${GATE_SERVICE_SECRET:}
