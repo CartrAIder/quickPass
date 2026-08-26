@@ -1,6 +1,6 @@
 package com.mart.quickpass.auth.controller;
 
-import com.mart.quickpass.auth.dto.AuthTokens;
+import com.mart.quickpass.auth.dto.AuthResult;
 import com.mart.quickpass.auth.dto.ChangePasswordRequest;
 import com.mart.quickpass.auth.dto.LoginRequest;
 import com.mart.quickpass.auth.dto.MobileAuthResponse;
@@ -53,7 +53,7 @@ public class MobileAuthController {
     }
 
     // AuthTokens -> MobileAuthResponse 변환 메서드
-    private MobileAuthResponse toResponse(AuthTokens tokens) {
+    private MobileAuthResponse toResponse(AuthResult tokens) {
         return new MobileAuthResponse(
                 tokens.accessToken(),
                 tokens.refreshToken(),

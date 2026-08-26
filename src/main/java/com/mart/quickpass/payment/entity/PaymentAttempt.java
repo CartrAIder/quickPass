@@ -161,4 +161,8 @@ public class PaymentAttempt {
         this.failureMessage = failureMessage;
         this.status = PaymentStatus.FAILED;
     }
+
+    public void cancel() {
+        this.status = PaymentStatus.CANCELED;
+    }
 }

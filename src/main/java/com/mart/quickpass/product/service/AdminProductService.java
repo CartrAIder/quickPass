@@ -28,6 +28,7 @@ public class AdminProductService {
                 .price(request.price())
                 .category(request.category())
                 .status(request.status())
+                .imageUrl(request.imageUrl())
                 .build();
         return ProductResponse.from(productRepository.save(product));
     }
@@ -46,6 +47,10 @@ public class AdminProductService {
         }
         if (request.status() != null) {
             product.changeStatus(request.status());
+        }
+
+        if (request.imageUrl() != null) {
+            product.changeImageUrl(request.imageUrl());
         }
 
         return ProductResponse.from(product);

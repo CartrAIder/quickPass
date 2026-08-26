@@ -3,23 +3,53 @@ package com.mart.quickpass.order.repository;
 import com.mart.quickpass.order.entity.Order;
 import com.mart.quickpass.order.entity.OrderStatus;
 import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
 import java.util.Collection;
-import com.mart.quickpass.order.entity.OrderStatus;
+import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     boolean existsByUserIdAndStatusIn(Long userId, Collection<OrderStatus> statuses);
 
     Optional<Order> findByOrderId(String orderId);
+
+    Optional<Order> findByOrderIdAndUserIdAndStatusIn(
+            String orderId, Long userId, Collection<OrderStatus> statuses);
+
+    Optional<Order> findByUserIdAndCartIdAndStatus(Long userId, Long cartId, OrderStatus status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select o from Order o
+            where o.user.id = :userId
+              and o.cart.id = :cartId
+              and o.status = :status
+            """)
+    Optional<Order> findByUserAndCartAndStatusForUpdate(
+            @Param("userId") Long userId,
+            @Param("cartId") Long cartId,
+            @Param("status") OrderStatus status);
+
+    boolean existsByCartQrCodeAndStatus(String qrCode, OrderStatus status);
+
+    @Query("""
+            select o from Order o
+            where o.user.id = :userId
+              and o.status in :statuses
+            """)
+    Slice<Order> findPurchaseHistory(
+            @Param("userId") Long userId,
+            @Param("statuses") Collection<OrderStatus> statuses,
+            Pageable pageable
+    );
 
     @EntityGraph(attributePaths = "user")
     @Query(value = """

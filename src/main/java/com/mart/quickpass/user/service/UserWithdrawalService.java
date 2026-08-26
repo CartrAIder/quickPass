@@ -40,9 +40,11 @@ public class UserWithdrawalService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final CartSseService cartSseService;
 
+    // 회원 탈퇴 메서드
     @Transactional
     public void withdraw(Long userId, WithdrawUserRequest request) {
-        User user = userRepository.findById(userId)
+        // 주문 생성과 동일하게 사용자 행을 먼저 잠가 users -> carts 잠금 순서를 유지한다.
+        User user = userRepository.findByIdForUpdate(userId)
                 .filter(User::isActive)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 

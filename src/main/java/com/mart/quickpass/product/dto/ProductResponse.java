@@ -1,6 +1,7 @@
 package com.mart.quickpass.product.dto;
 
 import com.mart.quickpass.product.entity.Product;
+import com.mart.quickpass.product.entity.ProductCategory;
 import com.mart.quickpass.product.entity.ProductStatus;
 
 public record ProductResponse(
@@ -10,8 +11,9 @@ public record ProductResponse(
         String barcode,
         String name,
         Integer price,
-        String category,
-        ProductStatus status
+        ProductCategory category,
+        ProductStatus status,
+        String imageUrl
 ) {
     public static ProductResponse from(Product product) {
         return new ProductResponse(
@@ -20,7 +22,8 @@ public record ProductResponse(
                 product.getName(),
                 product.getPrice(),
                 product.getCategory(),
-                product.getStatus()
+                product.getStatus(),
+                product.getImageUrl()
         );
     }
 }

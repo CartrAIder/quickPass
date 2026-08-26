@@ -13,10 +13,13 @@ import com.mart.quickpass.cart.repository.CartVersionRepository;
 import com.mart.quickpass.global.config.CartSessionProperties;
 import com.mart.quickpass.product.entity.Product;
 import com.mart.quickpass.product.repository.ProductRepository;
+import com.mart.quickpass.order.entity.OrderStatus;
+import com.mart.quickpass.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -35,17 +38,19 @@ public class CartScanService {
     private final CartVersionRepository cartVersionRepository;
     private final CartScanDeduplicationRepository cartScanDeduplicationRepository;
     private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
     private final CartSessionProperties cartSessionProperties;
     private final ApplicationEventPublisher eventPublisher;
 
     // 카트에서 발생한 바코드 스캔을 처리한다
+    @Transactional
     public void handleScan(String qrCode, CartScanMessage scan) {
         if (scan.scanId() == null || scan.scanId().isBlank()) {
             log.warn("[CartScan] scanId가 없는 스캔 메시지 - qrCode={}", qrCode);
             return;
         }
 
-        if (cartRepository.findByQrCode(qrCode).isEmpty()) {
+        if (cartRepository.findByQrCodeForUpdate(qrCode).isEmpty()) {
             // 등록되지 않은 카트에서 온 메시지는 무시한다 (오작동/장난 발행 방어)
             log.warn("[CartScan] 등록되지 않은 카트 - qrCode={}", qrCode);
             return;
@@ -55,6 +60,11 @@ public class CartScanService {
         if (session.isEmpty()) {
             // 앱과 연동(QR 연결)되지 않은 카트의 스캔은 반영할 사용자가 없으므로 무시한다
             log.warn("[CartScan] 연동되지 않은 카트의 스캔 - qrCode={}", qrCode);
+            return;
+        }
+
+        if (orderRepository.existsByCartQrCodeAndStatus(qrCode, OrderStatus.PENDING_PAYMENT)) {
+            log.info("[CartScan] 결제 진행 중인 카트의 스캔 무시 - qrCode={}", qrCode);
             return;
         }
 

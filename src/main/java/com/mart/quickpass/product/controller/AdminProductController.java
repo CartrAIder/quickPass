@@ -1,9 +1,11 @@
 package com.mart.quickpass.product.controller;
 
 import com.mart.quickpass.product.dto.ProductCreateRequest;
+import com.mart.quickpass.product.dto.ProductImageUploadResponse;
 import com.mart.quickpass.product.dto.ProductResponse;
 import com.mart.quickpass.product.dto.ProductUpdateRequest;
 import com.mart.quickpass.product.service.AdminProductService;
+import com.mart.quickpass.product.service.ProductImageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,7 +15,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/admin/products")
@@ -21,6 +25,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminProductController {
 
     private final AdminProductService adminProductService;
+    private final ProductImageService productImageService;
+
+    @PostMapping("/images")
+    public ResponseEntity<ProductImageUploadResponse> uploadImage(
+            @RequestPart("image") MultipartFile image
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ProductImageUploadResponse(productImageService.upload(image)));
+    }
 
     // 상품 등록
     @PostMapping

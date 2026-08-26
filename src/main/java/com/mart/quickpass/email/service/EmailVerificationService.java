@@ -70,13 +70,14 @@ public class EmailVerificationService {
         emailVerificationRepository.markVerified(email, properties.verifiedTtl());
     }
 
+    // 이메일 인증 여부 검사
     public void requireVerified(String email) {
         if (!emailVerificationRepository.isVerified(email)) {
             throw new EmailNotVerifiedException();
         }
     }
 
-    // 이메일 인증 여부 검사
+    // 이메일 인증 기록 삭제
     public void consumeVerification(String email) {
         emailVerificationRepository.consumeVerified(email);
     }

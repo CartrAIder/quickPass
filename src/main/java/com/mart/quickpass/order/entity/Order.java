@@ -1,5 +1,6 @@
 package com.mart.quickpass.order.entity;
 
+import com.mart.quickpass.cart.entity.Cart;
 import com.mart.quickpass.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -50,6 +51,14 @@ public class Order {
     )
     private User user; // 유저
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "cart_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_orders_cart")
+    )
+    private Cart cart; // 주문 스냅샷을 생성한 카트
+
     @Column(name = "order_name", nullable = false, length = 100)
     private String orderName; // 주문 이름
 
@@ -69,6 +78,9 @@ public class Order {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt; // 주문 업데이트 시간
 
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt; // 결제 완료 시간
+
     @Version
     @Column(nullable = false)
     private Long version; // 버전 번호(낙관적 락)
@@ -77,19 +89,28 @@ public class Order {
     public Order(
             String orderId,
             User user,
+            Cart cart,
             String orderName,
             Long totalAmount,
             OrderStatus status,
-            LocalDateTime expiresAt
+            LocalDateTime expiresAt,
+            LocalDateTime paidAt
     ) {
         this.orderId = orderId;
         this.user = user;
+        this.cart = cart;
         this.orderName = orderName;
         this.totalAmount = totalAmount;
         this.status = status;
+        this.paidAt = paidAt;
     }
 
     public void markPaid() {
         this.status = OrderStatus.PAID;
+        this.paidAt = LocalDateTime.now();
+    }
+
+    public void expire() {
+        this.status = OrderStatus.EXPIRED;
     }
 }

@@ -1,8 +1,7 @@
 package com.mart.quickpass.product.dto;
 
 public enum ProductSortType {
-    LATEST,
+    NAME_ASC,
     PRICE_ASC,
-    PRICE_DESC,
-    NAME_ASC
+    PRICE_DESC
 }

@@ -9,6 +9,8 @@ import com.mart.quickpass.cart.repository.CartScanDeduplicationRepository;
 import com.mart.quickpass.cart.repository.CartSessionRepository;
 import com.mart.quickpass.cart.repository.CartVersionRepository;
 import com.mart.quickpass.global.config.CartSessionProperties;
+import com.mart.quickpass.order.entity.OrderStatus;
+import com.mart.quickpass.order.repository.OrderRepository;
 import com.mart.quickpass.product.entity.Product;
 import com.mart.quickpass.product.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,7 @@ class CartScanServiceTest {
     private final CartScanDeduplicationRepository scanDeduplicationRepository =
             mock(CartScanDeduplicationRepository.class);
     private final ProductRepository productRepository = mock(ProductRepository.class);
+    private final OrderRepository orderRepository = mock(OrderRepository.class);
     private final CartSessionProperties cartSessionProperties = new CartSessionProperties(Duration.ofHours(2));
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final CartScanService cartScanService = new CartScanService(
@@ -42,13 +45,14 @@ class CartScanServiceTest {
             cartVersionRepository,
             scanDeduplicationRepository,
             productRepository,
+            orderRepository,
             cartSessionProperties,
             eventPublisher);
 
     @Test
     void duplicateScanIdDoesNotChangeCartQuantity() {
         CartScanMessage scan = new CartScanMessage("scan-1", "8801234567890", 1786430943000L);
-        when(cartRepository.findByQrCode("cart_001")).thenReturn(Optional.of(mock(Cart.class)));
+        when(cartRepository.findByQrCodeForUpdate("cart_001")).thenReturn(Optional.of(mock(Cart.class)));
         when(cartSessionRepository.findByQrCode("cart_001")).thenReturn(Optional.of(CartSession.start(1L)));
         when(productRepository.findByBarcode("8801234567890")).thenReturn(Optional.of(mock(Product.class)));
         when(scanDeduplicationRepository.tryMarkProcessed("cart_001", "scan-1", Duration.ofHours(2)))
@@ -67,7 +71,22 @@ class CartScanServiceTest {
 
         cartScanService.handleScan("cart_001", scan);
 
-        verify(cartRepository, never()).findByQrCode(eq("cart_001"));
+        verify(cartRepository, never()).findByQrCodeForUpdate(eq("cart_001"));
+        verify(scanDeduplicationRepository, never()).tryMarkProcessed(any(), any(), any());
+    }
+
+    @Test
+    void scanDoesNotChangeCartWhilePaymentIsPending() {
+        CartScanMessage scan = new CartScanMessage("scan-2", "8801234567890", 1786430943000L);
+        when(cartRepository.findByQrCodeForUpdate("cart_001")).thenReturn(Optional.of(mock(Cart.class)));
+        when(cartSessionRepository.findByQrCode("cart_001")).thenReturn(Optional.of(CartSession.start(1L)));
+        when(orderRepository.existsByCartQrCodeAndStatus("cart_001", OrderStatus.PENDING_PAYMENT))
+                .thenReturn(true);
+
+        cartScanService.handleScan("cart_001", scan);
+
+        verify(productRepository, never()).findByBarcode(any());
+        verify(cartItemsRepository, never()).saveItem(any(), any(), any());
         verify(scanDeduplicationRepository, never()).tryMarkProcessed(any(), any(), any());
     }
 }

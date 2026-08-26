@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -53,6 +54,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidRequestParameter(Exception e) {
         return ResponseEntity.status(ErrorCode.VALIDATION_ERROR.httpStatus())
                 .body(ErrorResponse.of(ErrorCode.VALIDATION_ERROR.name(), "요청 파라미터가 올바르지 않습니다."));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleOversizedProductImage(MaxUploadSizeExceededException e) {
+        return ResponseEntity.status(ErrorCode.INVALID_PRODUCT_IMAGE.httpStatus())
+                .body(ErrorResponse.of(
+                        ErrorCode.INVALID_PRODUCT_IMAGE.name(),
+                        "이미지 파일은 5MB를 초과할 수 없습니다."
+                ));
     }
 
     /** 내부 상세 정보는 로그에만 남기고, 프론트에는 안전하고 안정적인 코드만 노출한다. */

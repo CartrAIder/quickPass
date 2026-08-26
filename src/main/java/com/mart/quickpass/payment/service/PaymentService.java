@@ -1,5 +1,6 @@
 package com.mart.quickpass.payment.service;
 
+import com.mart.quickpass.cart.service.CartConnectionService;
 import com.mart.quickpass.global.exception.InvalidPaymentStateException;
 import com.mart.quickpass.global.exception.OrderAccessDeniedException;
 import com.mart.quickpass.global.exception.OrderNotFoundException;
@@ -9,6 +10,7 @@ import com.mart.quickpass.order.entity.Order;
 import com.mart.quickpass.order.entity.OrderStatus;
 import com.mart.quickpass.order.repository.OrderRepository;
 import com.mart.quickpass.payment.dto.PaymentAttemptCreateResponse;
+import com.mart.quickpass.payment.dto.PaymentAttemptCreateResult;
 import com.mart.quickpass.payment.dto.PaymentConfirmRequest;
 import com.mart.quickpass.payment.dto.PaymentConfirmResponse;
 import com.mart.quickpass.payment.entity.PaymentAttempt;
@@ -33,18 +35,21 @@ public class PaymentService {
     private final PaymentAttemptRepository paymentAttemptRepository;
     private final TossPaymentClient tossPaymentsClient;
     private final GateTokenService gateTokenService;
+    private final CartConnectionService cartConnectionService;
 
 
     // 결제 시도 생성 메서드
     @Transactional
-    public PaymentAttemptCreateResponse createAttempt(Long userId, String orderId) {
+    public PaymentAttemptCreateResult createAttempt(Long userId, String orderId) {
         // 주문 조회 및 상태 검사
         Order order = findOwnedOrder(userId, orderId);
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
             throw new InvalidPaymentStateException("결제를 시작할 수 없는 주문 상태입니다.");
         }
-        if (paymentAttemptRepository.existsByOrder_IdAndStatusIn(order.getId(), ACTIVE_PAYMENT_STATUSES)) {
-            throw new InvalidPaymentStateException("이미 진행 중인 결제 시도가 있습니다.");
+        var activeAttempt = paymentAttemptRepository.findFirstByOrder_IdAndStatusInOrderByIdAsc(
+                order.getId(), ACTIVE_PAYMENT_STATUSES);
+        if (activeAttempt.isPresent()) {
+            return PaymentAttemptCreateResult.existing(PaymentAttemptCreateResponse.from(activeAttempt.get()));
         }
 
         PaymentAttempt attempt = PaymentAttempt.builder()
@@ -55,7 +60,8 @@ public class PaymentService {
                 .status(PaymentStatus.READY)
                 .build();
 
-        return PaymentAttemptCreateResponse.from(paymentAttemptRepository.save(attempt));
+        return PaymentAttemptCreateResult.created(
+                PaymentAttemptCreateResponse.from(paymentAttemptRepository.save(attempt)));
     }
 
     // 결제 승인 메서드
@@ -117,6 +123,7 @@ public class PaymentService {
 
         attempt.markApproved(payment.paymentKey(), payment.totalAmount(), payment.status(), payment.method());
         order.markPaid();
+        cartConnectionService.completePayment(userId, order.getCart());
 
         return PaymentConfirmResponse.from(attempt, gateTokenService.issue(order.getId()));
     }

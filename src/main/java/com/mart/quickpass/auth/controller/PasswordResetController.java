@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth/password-reset")
 @RequiredArgsConstructor
 public class PasswordResetController {
+    // 비밀번호 초기화 컨트롤러
 
     private static final String SEND_RESPONSE_MESSAGE =
             "가입된 이메일이라면 인증번호를 전송했습니다.";
