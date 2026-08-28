@@ -1,6 +1,7 @@
 package com.mart.quickpass.product.controller;
 
 import com.mart.quickpass.global.exception.GlobalExceptionHandler;
+import com.mart.quickpass.product.dto.ProductImageUploadResponse;
 import com.mart.quickpass.product.service.AdminProductService;
 import com.mart.quickpass.product.service.ProductImageService;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,14 +42,16 @@ class AdminProductControllerTest {
         MockMultipartFile image = new MockMultipartFile(
                 "image", "milk.jpg", "image/jpeg", new byte[]{1, 2, 3}
         );
-        when(productImageService.upload(image))
-                .thenReturn("http://localhost:9000/product-images/products/image.jpg");
+        when(productImageService.upload("8800000000001", image, false))
+                .thenReturn(new ProductImageUploadResponse(
+                        "http://localhost:9000/product-images/products/8800000000001/image.jpg", true));
 
-        mockMvc.perform(multipart("/api/admin/products/images").file(image))
+        mockMvc.perform(multipart("/api/admin/products/8800000000001/image").file(image))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.imageUrl")
-                        .value("http://localhost:9000/product-images/products/image.jpg"));
+                        .value("http://localhost:9000/product-images/products/8800000000001/image.jpg"))
+                .andExpect(jsonPath("$.uploaded").value(true));
 
-        verify(productImageService).upload(image);
+        verify(productImageService).upload("8800000000001", image, false);
     }
 }

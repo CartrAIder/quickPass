@@ -34,6 +34,7 @@ class PaymentServiceTest {
     private final OrderRepository orderRepository = mock(OrderRepository.class);
     private final PaymentAttemptRepository paymentAttemptRepository = mock(PaymentAttemptRepository.class);
     private final TossPaymentClient tossPaymentClient = mock(TossPaymentClient.class);
+    private final GateTokenService gateTokenService = mock(GateTokenService.class);
     private final CartConnectionService cartConnectionService = mock(CartConnectionService.class);
 
     private PaymentService paymentService;
@@ -42,7 +43,7 @@ class PaymentServiceTest {
     @BeforeEach
     void setUp() {
         paymentService = new PaymentService(
-                orderRepository, paymentAttemptRepository, tossPaymentClient, cartConnectionService);
+                orderRepository, paymentAttemptRepository, tossPaymentClient, gateTokenService, cartConnectionService);
 
         User user = User.builder()
                 .email("user@example.com")

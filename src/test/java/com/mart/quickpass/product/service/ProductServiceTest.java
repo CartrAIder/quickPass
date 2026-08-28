@@ -1,5 +1,6 @@
 package com.mart.quickpass.product.service;
 
+import com.mart.quickpass.global.storage.minio.MinioObjectStorage;
 import com.mart.quickpass.product.dto.ProductSliceResponse;
 import com.mart.quickpass.product.dto.ProductSortType;
 import com.mart.quickpass.product.entity.Product;
@@ -25,7 +26,8 @@ import static org.mockito.Mockito.when;
 class ProductServiceTest {
 
     private final ProductRepository productRepository = mock(ProductRepository.class);
-    private final ProductService productService = new ProductService(productRepository);
+    private final MinioObjectStorage objectStorage = mock(MinioObjectStorage.class);
+    private final ProductService productService = new ProductService(productRepository, objectStorage);
 
     @ParameterizedTest
     @MethodSource("sortCases")
@@ -50,7 +52,7 @@ class ProductServiceTest {
                 .price(3_000)
                 .category(ProductCategory.DAIRY)
                 .status(ProductStatus.ON_SALE)
-                .imageUrl("https://cdn.example.com/milk.jpg")
+                .imageKey("products/8800000000001/milk.jpg")
                 .build();
         PageRequest pageable = PageRequest.of(0, 1,
                 Sort.by("status").ascending()
@@ -58,6 +60,8 @@ class ProductServiceTest {
                         .and(Sort.by("id").ascending()));
         when(productRepository.search(null, null, pageable))
                 .thenReturn(new SliceImpl<>(List.of(product), pageable, true));
+        when(objectStorage.publicUrl("products/8800000000001/milk.jpg"))
+                .thenReturn("https://cdn.example.com/product-images/products/8800000000001/milk.jpg");
 
         ProductSliceResponse response = productService.search("   ", null, ProductSortType.NAME_ASC, 0, 1);
 
@@ -65,7 +69,8 @@ class ProductServiceTest {
             assertThat(item.name()).isEqualTo("서울우유");
             assertThat(item.category()).isEqualTo(ProductCategory.DAIRY);
             assertThat(item.status()).isEqualTo(ProductStatus.ON_SALE);
-            assertThat(item.imageUrl()).isEqualTo("https://cdn.example.com/milk.jpg");
+            assertThat(item.imageUrl()).isEqualTo(
+                    "https://cdn.example.com/product-images/products/8800000000001/milk.jpg");
         });
         assertThat(response.page()).isZero();
         assertThat(response.size()).isEqualTo(1);

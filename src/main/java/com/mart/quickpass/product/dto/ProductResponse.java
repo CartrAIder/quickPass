@@ -4,6 +4,8 @@ import com.mart.quickpass.product.entity.Product;
 import com.mart.quickpass.product.entity.ProductCategory;
 import com.mart.quickpass.product.entity.ProductStatus;
 
+import java.util.function.Function;
+
 public record ProductResponse(
         // 응답 dto
 
@@ -15,7 +17,7 @@ public record ProductResponse(
         ProductStatus status,
         String imageUrl
 ) {
-    public static ProductResponse from(Product product) {
+    public static ProductResponse from(Product product, Function<String, String> imageUrlResolver) {
         return new ProductResponse(
                 product.getId(),
                 product.getBarcode(),
@@ -23,7 +25,7 @@ public record ProductResponse(
                 product.getPrice(),
                 product.getCategory(),
                 product.getStatus(),
-                product.getImageUrl()
+                imageUrlResolver.apply(product.getImageKey())
         );
     }
 }

@@ -5,12 +5,14 @@ import com.mart.quickpass.product.entity.ProductStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record ProductCreateRequest(
         // 상품 등록 dto
 
         @NotBlank(message = "바코드는 필수입니다.")
+        @Pattern(regexp = "[A-Za-z0-9._-]+", message = "바코드는 영문, 숫자, 점, 밑줄, 하이픈만 사용할 수 있습니다.")
         @Size(max = 100, message = "바코드는 100자를 초과할 수 없습니다.")
         String barcode,
 
@@ -26,9 +28,6 @@ public record ProductCreateRequest(
         ProductCategory category,
 
         @NotNull(message = "판매 상태는 필수입니다.")
-        ProductStatus status,
-
-        @Size(max = 2048, message = "이미지 URL은 2048자를 초과할 수 없습니다.")
-        String imageUrl
+        ProductStatus status
 ) {
 }

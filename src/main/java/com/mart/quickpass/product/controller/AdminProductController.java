@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,12 +28,15 @@ public class AdminProductController {
     private final AdminProductService adminProductService;
     private final ProductImageService productImageService;
 
-    @PostMapping("/images")
+    @PostMapping("/{barcode}/image")
     public ResponseEntity<ProductImageUploadResponse> uploadImage(
+            @PathVariable String barcode,
+            @RequestParam(defaultValue = "false") boolean replace,
             @RequestPart("image") MultipartFile image
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ProductImageUploadResponse(productImageService.upload(image)));
+        ProductImageUploadResponse response = productImageService.upload(barcode, image, replace);
+        return ResponseEntity.status(response.uploaded() ? HttpStatus.CREATED : HttpStatus.OK)
+                .body(response);
     }
 
     // 상품 등록
