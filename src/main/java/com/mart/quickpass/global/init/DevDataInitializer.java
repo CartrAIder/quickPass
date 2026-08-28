@@ -47,6 +47,7 @@ public class DevDataInitializer implements CommandLineRunner {
     private static final String DEMO_PAYMENT_KEY = "DEV-PAYMENT-KEY-001";
     private static final String CANCELED_DEMO_ORDER_ID = "DEV-ORDER-002";
     private static final String EXPIRED_DEMO_ORDER_ID = "DEV-ORDER-003";
+    private static final int DEMO_PRODUCT_PRICE = 1_000;
 
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
@@ -62,14 +63,7 @@ public class DevDataInitializer implements CommandLineRunner {
         seedUser(TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_USER_NAME, UserRole.USER);
         seedUser(ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME, UserRole.ADMIN);
         seedCart(CART_001_QR, CartStatus.WAITING);
-
-        // 장바구니 스캔 데모용 상품 (바코드는 시뮬레이터/문서 예시와 맞춤)
-        seedProduct("8801234567890", "라면", 10, ProductCategory.SNACK);
-        seedProduct("8801234567891", "샴푸", 9800, ProductCategory.HOUSEHOLD);
-        seedProduct("8801234567892", "삼겹살", 15000, ProductCategory.FROZEN);
-
-        demoProducts().forEach(product ->
-                seedProduct(product.barcode(), product.name(), product.price(), product.category()));
+        demoProducts().forEach(this::seedProduct);
 
         seedOrder(
                 DEMO_ORDER_ID,
@@ -92,9 +86,58 @@ public class DevDataInitializer implements CommandLineRunner {
         );
     }
 
+    /**
+     * 바코드 스캔 및 장바구니 화면 테스트용 추가 상품 50개.
+     * 기존 3개 상품과 바코드가 겹치지 않도록 8801234567893부터 사용한다.
+     */
+    private List<DemoProduct> demoProducts() {
+        return List.of(
+                new DemoProduct("0000289908820", "알로에", ProductCategory.BEVERAGE),
+                new DemoProduct("0000196114796", "사과", ProductCategory.FOOD),
+                new DemoProduct("0000008526731", "가방", ProductCategory.FASHION_ACCESSORIES),
+                new DemoProduct("0000545710723", "밴드", ProductCategory.HOUSEHOLD),
+                new DemoProduct("0000554237457", "건전지(AA)", ProductCategory.DIGITAL_ELECTRONICS),
+                new DemoProduct("0000238748446", "시계", ProductCategory.HOUSEHOLD),
+                new DemoProduct("0000426336509", "콜라", ProductCategory.BEVERAGE),
+                new DemoProduct("0000443389960", "큐브", ProductCategory.TOYS_HOBBIES),
+                new DemoProduct("0000034106921", "공학용계산기", ProductCategory.DIGITAL_ELECTRONICS),
+                new DemoProduct("0000409283042", "칼", ProductCategory.TOYS_HOBBIES),
+                new DemoProduct("0000562764181", "뒤집개", ProductCategory.KITCHENWARE),
+                new DemoProduct("0000025580198", "게임패드", ProductCategory.DIGITAL_ELECTRONICS),
+                new DemoProduct("0000579817641", "악력기", ProductCategory.SPORTS_LEISURE),
+                new DemoProduct("0000511603806", "핸드크림", ProductCategory.BEAUTY),
+                new DemoProduct("0000460443423", "키보드", ProductCategory.DIGITAL_ELECTRONICS),
+                new DemoProduct("0000093794039", "립밤", ProductCategory.BEAUTY),
+                new DemoProduct("0000630978021", "모니터", ProductCategory.DIGITAL_ELECTRONICS),
+                new DemoProduct("0000119374221", "마우스", ProductCategory.DIGITAL_ELECTRONICS),
+                new DemoProduct("0000349595939", "접시", ProductCategory.KITCHENWARE),
+                new DemoProduct("0000588344374", "보조배터리", ProductCategory.DIGITAL_ELECTRONICS),
+                new DemoProduct("0000605397833", "각티슈", ProductCategory.HOUSEHOLD),
+                new DemoProduct("0000392229584", "치약", ProductCategory.HOUSEHOLD),
+                new DemoProduct("0000315489019", "우산", ProductCategory.HOUSEHOLD),
+                new DemoProduct("0000596871107", "USB메모리", ProductCategory.DIGITAL_ELECTRONICS),
+                new DemoProduct("0000358122669", "지갑", ProductCategory.FASHION_ACCESSORIES),
+                new DemoProduct("0000051160388", "김", ProductCategory.FOOD),
+                new DemoProduct("0000068213848", "노세범", ProductCategory.BEAUTY),
+                new DemoProduct("0000110847496", "마스크팩", ProductCategory.BEAUTY),
+                new DemoProduct("0000153481145", "배홍동칼빔면", ProductCategory.FOOD),
+                new DemoProduct("0000213168252", "세럼", ProductCategory.BEAUTY),
+                new DemoProduct("0000230221718", "수분크림", ProductCategory.BEAUTY),
+                new DemoProduct("0000255801902", "썬스틱", ProductCategory.BEAUTY),
+                new DemoProduct("0000306962286", "오뚜기작은밥", ProductCategory.FOOD),
+                new DemoProduct("0000324015742", "운동화", ProductCategory.FASHION_ACCESSORIES),
+                new DemoProduct("0000434863233", "쿠션", ProductCategory.BEAUTY),
+                new DemoProduct("0000486023616", "통조림닭가슴살", ProductCategory.FOOD),
+                new DemoProduct("0000537183993", "휴지", ProductCategory.HOUSEHOLD)
+        );
+    }
+
     private void seedApprovedPaymentAndGateToken(String orderId) {
-        Order order = orderRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new IllegalStateException("초기 결제 주문을 찾을 수 없습니다."));
+        Order order = orderRepository.findByOrderId(orderId).orElse(null);
+        if (order == null) {
+            log.debug("[DevData] 상품이 없어 생성되지 않은 주문 '{}'의 결제 시드를 생략", orderId);
+            return;
+        }
 
         if (paymentAttemptRepository.findByPaymentAttemptId(DEMO_PAYMENT_ATTEMPT_ID).isEmpty()) {
             LocalDateTime approvedAt = LocalDateTime.now();
@@ -122,65 +165,6 @@ public class DevDataInitializer implements CommandLineRunner {
         log.warn("[개발용 게이트 토큰] 주문번호={} | 토큰={}", orderId, gateToken);
     }
 
-    /**
-     * 바코드 스캔 및 장바구니 화면 테스트용 추가 상품 50개.
-     * 기존 3개 상품과 바코드가 겹치지 않도록 8801234567893부터 사용한다.
-     */
-    private List<DemoProduct> demoProducts() {
-        return List.of(
-                new DemoProduct("8801234567893", "신라면", 1200, ProductCategory.SNACK),
-                new DemoProduct("8801234567894", "짜파게티", 1300, ProductCategory.SNACK),
-                new DemoProduct("8801234567895", "진라면 매운맛", 1000, ProductCategory.SNACK),
-                new DemoProduct("8801234567896", "컵라면", 1500, ProductCategory.SNACK),
-                new DemoProduct("8801234567897", "즉석밥", 1800, ProductCategory.SNACK),
-                new DemoProduct("8801234567898", "참치캔", 2500, ProductCategory.SNACK),
-                new DemoProduct("8801234567899", "스팸 클래식", 5200, ProductCategory.SNACK),
-                new DemoProduct("8801234567900", "김치", 7900, ProductCategory.VEGETABLE),
-                new DemoProduct("8801234567901", "맛김", 3200, ProductCategory.SNACK),
-                new DemoProduct("8801234567902", "올리브유", 12900, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567903", "우유 1L", 2900, ProductCategory.DAIRY),
-                new DemoProduct("8801234567904", "딸기우유", 1700, ProductCategory.DAIRY),
-                new DemoProduct("8801234567905", "요구르트", 2600, ProductCategory.DAIRY),
-                new DemoProduct("8801234567906", "체다치즈", 4800, ProductCategory.DAIRY),
-                new DemoProduct("8801234567907", "계란 10구", 6500, ProductCategory.DAIRY),
-                new DemoProduct("8801234567908", "생수 500ml", 800, ProductCategory.BEVERAGE),
-                new DemoProduct("8801234567909", "생수 2L", 1500, ProductCategory.BEVERAGE),
-                new DemoProduct("8801234567910", "콜라 500ml", 2100, ProductCategory.BEVERAGE),
-                new DemoProduct("8801234567911", "사이다 500ml", 2100, ProductCategory.BEVERAGE),
-                new DemoProduct("8801234567912", "오렌지주스", 3500, ProductCategory.BEVERAGE),
-                new DemoProduct("8801234567913", "아메리카노 캔", 1800, ProductCategory.BEVERAGE),
-                new DemoProduct("8801234567914", "이온음료", 2000, ProductCategory.BEVERAGE),
-                new DemoProduct("8801234567915", "닭가슴살", 6900, ProductCategory.FROZEN),
-                new DemoProduct("8801234567916", "소고기 불고기", 18900, ProductCategory.FROZEN),
-                new DemoProduct("8801234567917", "돼지 목살", 13900, ProductCategory.FROZEN),
-                new DemoProduct("8801234567918", "훈제오리", 10900, ProductCategory.FROZEN),
-                new DemoProduct("8801234567919", "두부", 1800, ProductCategory.VEGETABLE),
-                new DemoProduct("8801234567920", "콩나물", 1500, ProductCategory.VEGETABLE),
-                new DemoProduct("8801234567921", "양파 1kg", 3400, ProductCategory.VEGETABLE),
-                new DemoProduct("8801234567922", "감자 1kg", 3900, ProductCategory.VEGETABLE),
-                new DemoProduct("8801234567923", "바나나", 4900, ProductCategory.FRUIT),
-                new DemoProduct("8801234567924", "사과 4입", 7900, ProductCategory.FRUIT),
-                new DemoProduct("8801234567925", "방울토마토", 5900, ProductCategory.FRUIT),
-                new DemoProduct("8801234567926", "냉동만두", 8500, ProductCategory.FROZEN),
-                new DemoProduct("8801234567927", "냉동피자", 9900, ProductCategory.FROZEN),
-                new DemoProduct("8801234567928", "아이스크림", 3500, ProductCategory.FROZEN),
-                new DemoProduct("8801234567929", "감자칩", 2500, ProductCategory.SNACK),
-                new DemoProduct("8801234567930", "초코파이", 4800, ProductCategory.SNACK),
-                new DemoProduct("8801234567931", "쿠키", 3300, ProductCategory.SNACK),
-                new DemoProduct("8801234567932", "물티슈", 2900, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567933", "화장지 12롤", 8900, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567934", "주방세제", 4900, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567935", "세탁세제", 11900, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567936", "칫솔 4입", 5500, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567937", "치약", 3200, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567938", "마스크 10매", 3900, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567939", "건전지 AA 4입", 4500, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567940", "고양이 사료", 15900, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567941", "강아지 간식", 6900, ProductCategory.HOUSEHOLD),
-                new DemoProduct("8801234567942", "종량제 봉투", 2200, ProductCategory.HOUSEHOLD)
-        );
-    }
-
     private void seedCart(String qrCode, CartStatus status) {
         if (cartRepository.existsByQrCode(qrCode)) {
             log.debug("[DevData] 카트 '{}' 이미 존재 - 시드 생략", qrCode);
@@ -194,20 +178,21 @@ public class DevDataInitializer implements CommandLineRunner {
         log.debug("[DevData] 가상 카트 시드 완료 - qrCode={}, status={}", qrCode, status);
     }
 
-    private void seedProduct(String barcode, String name, int price, ProductCategory category) {
-        if (productRepository.existsByBarcode(barcode)) {
-            log.debug("[DevData] 상품 '{}' 이미 존재 - 시드 생략", name);
+    private void seedProduct(DemoProduct demoProduct) {
+        if (productRepository.existsByBarcode(demoProduct.barcode())) {
+            log.debug("[DevData] 상품 '{}' 이미 존재 - 시드 생략", demoProduct.name());
             return;
         }
         Product product = Product.builder()
-                .barcode(barcode)
-                .name(name)
-                .price(price)
-                .category(category)
+                .barcode(demoProduct.barcode())
+                .name(demoProduct.name())
+                .price(DEMO_PRODUCT_PRICE)
+                .category(demoProduct.category())
                 .status(ProductStatus.ON_SALE)
                 .build();
         productRepository.save(product);
-        log.debug("[DevData] 상품 시드 완료 - barcode={}, name={}, price={}", barcode, name, price);
+        log.debug("[DevData] 상품 시드 완료 - barcode={}, name={}",
+                demoProduct.barcode(), demoProduct.name());
     }
 
     private void seedOrder(
@@ -227,8 +212,12 @@ public class DevDataInitializer implements CommandLineRunner {
                 .orElseThrow(() -> new IllegalStateException("초기 주문 사용자를 찾을 수 없습니다."));
         Cart cart = cartRepository.findByQrCode(CART_001_QR)
                 .orElseThrow(() -> new IllegalStateException("초기 주문 카트를 찾을 수 없습니다."));
-        Product firstProduct = getSeedProduct(firstProductBarcode);
-        Product secondProduct = getSeedProduct(secondProductBarcode);
+        Product firstProduct = productRepository.findByBarcode(firstProductBarcode).orElse(null);
+        Product secondProduct = productRepository.findByBarcode(secondProductBarcode).orElse(null);
+        if (firstProduct == null || secondProduct == null) {
+            log.debug("[DevData] 주문 '{}'에 필요한 상품이 없어 주문 시드를 생략", orderId);
+            return;
+        }
         long firstLineAmount = (long) firstProduct.getPrice() * firstProductQuantity;
         long secondLineAmount = (long) secondProduct.getPrice() * secondProductQuantity;
 
@@ -250,12 +239,6 @@ public class DevDataInitializer implements CommandLineRunner {
         ));
         log.debug("[DevData] 주문 시드 완료 - orderId={}, status={}, totalAmount={}",
                 orderId, status, order.getTotalAmount());
-    }
-
-    private Product getSeedProduct(String barcode) {
-        return productRepository.findByBarcode(barcode)
-                .orElseThrow(() -> new IllegalStateException(
-                        "초기 주문 상품을 찾을 수 없습니다. barcode=" + barcode));
     }
 
     private OrderItem createOrderItem(Order order, Product product, int quantity, long lineAmount) {
@@ -284,6 +267,6 @@ public class DevDataInitializer implements CommandLineRunner {
         log.debug("[DevData] 테스트 사용자 시드 완료 - email={}, name={}", email, name);
     }
 
-    private record DemoProduct(String barcode, String name, int price, ProductCategory category) {
+    private record DemoProduct(String barcode, String name, ProductCategory category) {
     }
 }

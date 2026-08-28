@@ -40,8 +40,8 @@ public class Product {
     @Column(nullable = false)
     private ProductStatus status; // 상태
 
-    @Column(length = 2048)
-    private String imageUrl; // 대표 이미지 URL
+    @Column(length = 512)
+    private String imageKey; // 저장소 주소와 독립적인 MinIO Object Key
 
     @Builder
     public Product(
@@ -50,14 +50,14 @@ public class Product {
             Integer price,
             ProductCategory category,
             ProductStatus status,
-            String imageUrl
+            String imageKey
     ) {
         this.barcode = barcode;
         this.name = name;
         this.price = price;
         this.category = category;
         this.status = status;
-        this.imageUrl = imageUrl;
+        this.imageKey = imageKey;
     }
 
     public void changePrice(Integer price) {
@@ -72,7 +72,7 @@ public class Product {
         this.barcode = barcode;
     }
 
-    public void changeImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+    public void changeImageKey(String imageKey) {
+        this.imageKey = imageKey;
     }
 }

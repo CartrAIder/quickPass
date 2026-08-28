@@ -4,6 +4,7 @@ import com.mart.quickpass.global.security.JwtAccessDeniedHandler;
 import com.mart.quickpass.global.security.JwtAuthenticationEntryPoint;
 import com.mart.quickpass.global.security.jwt.JwtTokenProvider;
 import com.mart.quickpass.user.repository.UserRepository;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.cors.CorsConfiguration;
@@ -22,6 +23,8 @@ class SecurityConfigCorsTest {
                 mock(JwtAuthenticationEntryPoint.class),
                 mock(JwtAccessDeniedHandler.class),
                 mock(UserRepository.class),
+                new GateProperties("test-secret"),
+                new ObjectMapper(),
                 new AuthCorsProperties(List.of("https://app.quickpass.example"))
         );
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/reissue");

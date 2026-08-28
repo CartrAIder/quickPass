@@ -56,9 +56,10 @@ springdoc:
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
   public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
-  access-key: ${MINIO_ROOT_USER}
-  secret-key: ${MINIO_ROOT_PASSWORD}
-  bucket: ${MINIO_BUCKET:product-images}
+  # 관리자 계정이 아닌 minio-init이 준비한 애플리케이션 전용 계정을 사용한다.
+  access-key: ${MINIO_APP_USER}
+  secret-key: ${MINIO_APP_PASSWORD}
+  bucket: product-images
 
 mqtt:
   broker-url: ${MQTT_BROKER_URL}      # 내부 연결: tcp://host:1883, TLS: ssl://host:8883

@@ -2,6 +2,7 @@ package com.mart.quickpass.product.service;
 
 import com.mart.quickpass.global.exception.DuplicateProductBarcodeException;
 import com.mart.quickpass.global.exception.ProductNotFoundException;
+import com.mart.quickpass.global.storage.minio.MinioObjectStorage;
 import com.mart.quickpass.product.dto.ProductCreateRequest;
 import com.mart.quickpass.product.dto.ProductResponse;
 import com.mart.quickpass.product.dto.ProductUpdateRequest;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminProductService {
 
     private final ProductRepository productRepository;
+    private final MinioObjectStorage objectStorage;
 
     // 상품 등록 메서드
     @Transactional
@@ -28,9 +30,8 @@ public class AdminProductService {
                 .price(request.price())
                 .category(request.category())
                 .status(request.status())
-                .imageUrl(request.imageUrl())
                 .build();
-        return ProductResponse.from(productRepository.save(product));
+        return toResponse(productRepository.save(product));
     }
 
     // 상품 정보 수정 메서드
@@ -49,11 +50,7 @@ public class AdminProductService {
             product.changeStatus(request.status());
         }
 
-        if (request.imageUrl() != null) {
-            product.changeImageUrl(request.imageUrl());
-        }
-
-        return ProductResponse.from(product);
+        return toResponse(product);
     }
 
     // 상품 정보 조회 메서드
@@ -70,5 +67,9 @@ public class AdminProductService {
         if (duplicate) {
             throw new DuplicateProductBarcodeException(barcode);
         }
+    }
+
+    private ProductResponse toResponse(Product product) {
+        return ProductResponse.from(product, objectStorage::publicUrl);
     }
 }
