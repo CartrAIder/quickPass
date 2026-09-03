@@ -62,12 +62,10 @@ minio:
   bucket: product-images
 
 mqtt:
-  broker-url: ${MQTT_BROKER_URL}      # 내부 연결: tcp://host:1883, TLS: ssl://host:8883
+  broker-url: ${MQTT_BROKER_URL}      # Docker 내부 연결: tcp://mosquitto:1883
   client-id: ${MQTT_CLIENT_ID}        # 서버의 MQTT 클라이언트 ID (연결마다 고유해야 함)
   username: ${MQTT_USERNAME}          # backend MQTT 계정
   password: ${MQTT_PASSWORD}          # backend MQTT 계정 비밀번호
-  trust-store-path: ${MQTT_TRUSTSTORE_PATH:}
-  trust-store-password: ${MQTT_TRUSTSTORE_PASSWORD:}
   scan-topic: quickpass/cart/+/scan   # 카트 바코드 스캔 구독 토픽 (+ = qrCode 와일드카드)
   qos: 1                              # 0=최대1회, 1=최소1회(중복가능), 2=정확히1회
   scan-deduplication-ttl: 2h          # 동일 scanId 중복 차단 유지 시간

@@ -11,14 +11,6 @@ import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannel
 import org.springframework.integration.mqtt.support.DefaultPahoMessageConverter;
 import org.springframework.messaging.MessageChannel;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.KeyStore;
-
 // MQTT 수신 인프라 설정
 @Configuration
 public class MqttConfig {
@@ -43,32 +35,8 @@ public class MqttConfig {
         options.setKeepAliveInterval(60);
         options.setUserName(properties.username());
         options.setPassword(properties.password().toCharArray());
-        if (properties.brokerUrl().startsWith("ssl://") && !properties.trustStorePath().isBlank()) {
-            options.setSocketFactory(createSslSocketFactory());
-        }
-
         factory.setConnectionOptions(options);
         return factory;
-    }
-
-    private SSLSocketFactory createSslSocketFactory() {
-        try {
-            KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            char[] password = properties.trustStorePassword().toCharArray();
-            try (InputStream inputStream = Files.newInputStream(Path.of(properties.trustStorePath()))) {
-                trustStore.load(inputStream, password);
-            }
-
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
-                    TrustManagerFactory.getDefaultAlgorithm());
-            trustManagerFactory.init(trustStore);
-
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
-            return sslContext.getSocketFactory();
-        } catch (Exception e) {
-            throw new IllegalStateException("MQTT TLS truststore를 초기화할 수 없습니다", e);
-        }
     }
 
     // 브로커에게 받은 메세지를 스프링 비즈니스 로직으로 넘김
