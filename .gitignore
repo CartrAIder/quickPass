@@ -1,7 +1,6 @@
 # Project-local notes
 HELP.md
 *.md
-!AGENTS.md
 !docs/
 docs/*
 !docs/product-image-storage.md

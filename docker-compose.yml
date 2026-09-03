@@ -57,16 +57,29 @@ services:
   mosquitto:
     image: eclipse-mosquitto:2.0
     container_name: quickpass-mosquitto
-    ports:
-      - "8883:8883"   # MQTT over TLS
     volumes:
       - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - ./mosquitto/config/acl.txt:/mosquitto/config/acl.txt:ro
-      # 인증서와 비밀번호 파일은 Git에서 제외하고 환경별로 주입한다.
-      - ./mosquitto/certs:/mosquitto/config/certs:ro
       - ./mosquitto/auth:/mosquitto/config/auth:ro
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: quickpass-nginx
+    depends_on:
+      - mosquitto
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.8.1
+    container_name: quickpass-cloudflared
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - nginx
     restart: unless-stopped
 
 volumes:
