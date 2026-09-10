@@ -41,14 +41,13 @@ pipeline {
                 withCredentials([file(credentialsId: 'quickpass-production-env', variable: 'DEPLOY_ENV_FILE')]) {
                     sh '''
                         set -eu
-                        install -m 600 "$DEPLOY_ENV_FILE" .env
                         docker build --tag "quickpass-backend:$BUILD_NUMBER" .
                         docker rm --force quickpass-backend 2>/dev/null || true
                         docker run --detach \
                             --name quickpass-backend \
                             --network cartAider-network \
                             --network-alias spring \
-                            --env-file .env \
+                            --env-file "$DEPLOY_ENV_FILE" \
                             --restart unless-stopped \
                             "quickpass-backend:$BUILD_NUMBER"
                     '''
@@ -77,8 +76,6 @@ pipeline {
             sh 'docker logs --tail 200 quickpass-backend || true'
         }
         always {
-            // Jenkins 작업 공간에 복사한 배포 환경 파일을 남기지 않는다.
-            sh 'rm -f .env'
             cleanWs()
         }
     }
