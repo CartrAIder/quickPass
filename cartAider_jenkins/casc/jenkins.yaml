@@ -1,0 +1,20 @@
+jenkins:
+  systemMessage: "QuickPass 로컬 개발 및 배포용 Jenkins"
+  numExecutors: 2
+  mode: NORMAL
+  labelString: "quickpass-docker-agent"
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+unclassified:
+  location:
+    url: "${JENKINS_URL}"

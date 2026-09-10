@@ -1,0 +1,8 @@
+configuration-as-code
+credentials-binding
+git
+pipeline-stage-view
+plain-credentials
+timestamper
+workflow-aggregator
+ws-cleanup

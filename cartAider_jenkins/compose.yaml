@@ -1,0 +1,52 @@
+name: cartaider-jenkins
+
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JENKINS_IMAGE_TAG: ${JENKINS_IMAGE_TAG:-lts-jdk21}
+    image: cartaider-jenkins:${JENKINS_IMAGE_TAG:-lts-jdk21}
+    container_name: cartaider-jenkins
+    init: true
+    user: "1000:1000"
+    group_add:
+      # start.sh가 호스트 Docker 소켓의 그룹 ID를 주입한다.
+      - "${QUICKPASS_DOCKER_GID:-0}"
+    environment:
+      CASC_JENKINS_CONFIG: /usr/share/jenkins/ref/casc/jenkins.yaml
+      JAVA_OPTS: >-
+        -Djenkins.install.runSetupWizard=false
+        -Duser.timezone=${JENKINS_TIMEZONE:-Asia/Seoul}
+      JENKINS_ADMIN_ID: ${JENKINS_ADMIN_ID:?JENKINS_ADMIN_ID is required}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?JENKINS_ADMIN_PASSWORD is required}
+      JENKINS_URL: ${JENKINS_URL:-http://localhost:8081/}
+      TZ: ${JENKINS_TIMEZONE:-Asia/Seoul}
+    ports:
+      - "${JENKINS_HTTP_PORT:-8081}:8080"
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      # 기존 Jenkinsfile이 호스트 Docker 엔진에 배포하므로 소켓을 공유한다.
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - jenkins-internal
+      - cartAider-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/login > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  jenkins-internal:
+    driver: bridge
+  cartAider-network:
+    external: true
+    name: cartAider-network
+
+volumes:
+  jenkins-home:
+    name: cartaider-jenkins-home
