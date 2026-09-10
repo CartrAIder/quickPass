@@ -2,9 +2,9 @@ spring:
   application:
     name: quickPass
 
-  # .env 파일 내용 조회
+  # 공통/배포 .env를 읽고, 로컬 파일이 있으면 뒤에서 읽어 값을 덮어쓴다.
   config:
-    import: optional:file:.env[.properties]
+    import: optional:file:.env[.properties],optional:file:.env.local[.properties]
 
   datasource:
     url: ${DB_URL}

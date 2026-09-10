@@ -5,6 +5,7 @@ HELP.md
 docs/*
 !docs/product-image-storage.md
 !docs/product-demo-image-import-guide.md
+!cartAider_jenkins/README.md
 
 ### Gradle / Java ###
 .gradle/

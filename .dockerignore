@@ -1,0 +1,12 @@
+.git
+# 로컬 개발/빌드 산출물 및 IDE 설정은 이미지 빌드에 포함하지 않는다.
+.gradle
+.idea
+build
+# 환경 변수와 비밀 값은 이미지에 포함하지 않는다.
+.env
+.env.*
+!.env.example
+*.iml
+*.log
+.DS_Store
