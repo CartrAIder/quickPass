@@ -1,7 +1,7 @@
 pipeline {
     // Jenkins Controller가 아닌 Docker 권한을 가진 Agent에서 실행한다.
     agent {
-        label 'quickpass-docker-agent'
+        label 'docker-agent'
     }
 
     options {
