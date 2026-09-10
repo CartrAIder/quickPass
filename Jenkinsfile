@@ -24,7 +24,20 @@ pipeline {
 
         stage('Spring Test') {
             steps {
-                sh './gradlew test --no-daemon'
+                withCredentials([
+                    file(
+                        credentialsId: 'quickpass-production-env',
+                        variable: 'SPRING_ENV_FILE'
+                    )
+                ]) {
+                    sh '''
+                        set -a
+                        . "$SPRING_ENV_FILE"
+                        set +a
+
+                        ./gradlew test --no-daemon
+                    '''
+                }
             }
         }
 
