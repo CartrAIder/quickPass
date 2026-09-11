@@ -8,7 +8,7 @@ pipeline {
         disableConcurrentBuilds()
 
         // Jenkins가 자동 Checkout하는 것을 막는다.
-        // 아래 Checkout stage에서 직접 수행하기 때문.
+        // 아래 Checkout stage에서 직접 수행한다.
         skipDefaultCheckout(true)
     }
 
@@ -32,9 +32,25 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        set -a
-                        . "$SPRING_ENV_FILE"
-                        set +a
+                        # Jenkins shell tracing을 끈다.
+                        # Secret File 내부 값이 Console Log에 노출되는 것을 방지한다.
+                        set +x
+                        set -eu
+
+                        # Docker --env-file 형식의 .env를
+                        # shell source 하지 않고 안전하게 환경변수로 등록한다.
+                        while IFS= read -r line || [ -n "$line" ]; do
+                            case "$line" in
+                                ''|'#'*)
+                                    continue
+                                    ;;
+                            esac
+
+                            key="${line%%=*}"
+                            value="${line#*=}"
+
+                            export "$key=$value"
+                        done < "$SPRING_ENV_FILE"
 
                         ./gradlew test --no-daemon
                     '''
@@ -57,6 +73,7 @@ pipeline {
                     )
                 ]) {
                     sh '''
+                        set +x
                         set -eu
 
                         docker build \
@@ -80,8 +97,11 @@ pipeline {
 
         stage('Health Check') {
             steps {
-                retry(12) {
-                    timeout(time: 10, unit: 'SECONDS') {
+                retry(24) {
+                    // Spring Boot가 초기화될 시간을 준다.
+                    sleep time: 5, unit: 'SECONDS'
+
+                    timeout(time: 5, unit: 'SECONDS') {
                         sh '''
                             curl \
                                 --fail \
@@ -102,10 +122,14 @@ pipeline {
         }
 
         failure {
-            sh 'docker logs --tail 200 quickpass-backend || true'
+            // 컨테이너가 존재하면 최근 로그를 확인한다.
+            sh '''
+                docker logs --tail 200 quickpass-backend \
+                    2>/dev/null || true
+            '''
         }
 
-        always {
+        cleanup {
             cleanWs()
         }
     }
