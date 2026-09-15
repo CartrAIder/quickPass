@@ -46,7 +46,6 @@ public class MinioObjectStorage {
             return null;
         }
         return stripTrailingSlash(properties.publicUrl())
-                + "/" + properties.bucket()
                 + "/" + objectKey;
     }
 
