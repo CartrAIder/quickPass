@@ -6,6 +6,7 @@ import com.mart.quickpass.gate.entity.GateFailureReason;
 import com.mart.quickpass.gate.entity.GateTokenState;
 import com.mart.quickpass.gate.entity.GateVerdict;
 import com.mart.quickpass.gate.exception.GateException;
+import com.mart.quickpass.gate.logging.GateRequestLogContext;
 import com.mart.quickpass.gate.repository.GateTokenRepository;
 import com.mart.quickpass.gate.repository.GateTokenSnapshot;
 import com.mart.quickpass.gate.repository.GateTransitionResult;
@@ -33,7 +34,10 @@ public class GateInspectionService {
 
     @Transactional(readOnly = true)
     public GateInspectionStartResponse start(String token, String gateId) {
+        GateRequestLogContext.putTokenReference(token);
+        GateRequestLogContext.putGateId(gateId);
         GateTokenSnapshot snapshot = findToken(token);
+        GateRequestLogContext.put(GateRequestLogContext.ORDER_ID, snapshot.orderId().toString());
         validatePreClaimState(snapshot, gateId);
 
         Order order = orderRepository.findById(snapshot.orderId())
@@ -47,21 +51,31 @@ public class GateInspectionService {
                 .map(this::toItem)
                 .toList();
         GateTransitionResult claim = gateTokenRepository.claim(token, gateId);
+        GateRequestLogContext.put(GateRequestLogContext.TRANSITION, claim.name());
         if (claim == GateTransitionResult.NOT_FOUND) {
             throw tokenNotFound();
         }
         if (claim == GateTransitionResult.CONFLICT) {
             throw new GateException(ErrorCode.GATE_STATE_CONFLICT, "Gate Token을 선점할 수 없습니다.");
         }
+        GateRequestLogContext.put(GateRequestLogContext.ITEM_COUNT, Integer.toString(items.size()));
         return new GateInspectionStartResponse(items);
     }
 
     public void complete(String token, GateVerdict verdict) {
-        assertTransitionSucceeded(gateTokenRepository.complete(token, verdict.name()), "완료");
+        GateRequestLogContext.putTokenReference(token);
+        GateRequestLogContext.put(GateRequestLogContext.VERDICT, verdict.name());
+        GateTransitionResult result = gateTokenRepository.complete(token, verdict.name());
+        GateRequestLogContext.put(GateRequestLogContext.TRANSITION, result.name());
+        assertTransitionSucceeded(result, "완료");
     }
 
     public void fail(String token, GateFailureReason reason) {
-        assertTransitionSucceeded(gateTokenRepository.fail(token, reason.name()), "실패");
+        GateRequestLogContext.putTokenReference(token);
+        GateRequestLogContext.put(GateRequestLogContext.FAILURE_REASON, reason.name());
+        GateTransitionResult result = gateTokenRepository.fail(token, reason.name());
+        GateRequestLogContext.put(GateRequestLogContext.TRANSITION, result.name());
+        assertTransitionSucceeded(result, "실패");
     }
 
     private GateTokenSnapshot findToken(String token) {

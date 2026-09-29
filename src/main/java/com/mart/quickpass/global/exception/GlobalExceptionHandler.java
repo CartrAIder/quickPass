@@ -1,7 +1,9 @@
 package com.mart.quickpass.global.exception;
 
+import com.mart.quickpass.gate.logging.GateRequestLogContext;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -24,12 +26,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
         ErrorCode errorCode = e.getErrorCode();
+        markGateError(errorCode);
         return ResponseEntity.status(errorCode.httpStatus())
                 .body(ErrorResponse.of(errorCode.name(), e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleInvalidArgument(MethodArgumentNotValidException e) {
+        markGateError(ErrorCode.VALIDATION_ERROR);
         List<String> details = e.getBindingResult().getFieldErrors().stream()
                 .map(FieldError::getDefaultMessage)
                 .toList();
@@ -45,6 +49,7 @@ public class GlobalExceptionHandler {
     /** JSON 문법 오류나 타입 변환 불가 요청도 Boot 기본 형식 대신 공통 계약으로 반환한다. */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleMalformedRequest(HttpMessageNotReadableException e) {
+        markGateError(ErrorCode.MALFORMED_REQUEST);
         return ResponseEntity.status(ErrorCode.MALFORMED_REQUEST.httpStatus())
                 .body(ErrorResponse.of(ErrorCode.MALFORMED_REQUEST.name(), "요청 본문 형식이 올바르지 않습니다."));
     }
@@ -52,12 +57,14 @@ public class GlobalExceptionHandler {
     /** 쿼리 파라미터와 경로 변수의 검증/타입 오류도 요청 오류로 통일한다. */
     @ExceptionHandler({ConstraintViolationException.class, MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ErrorResponse> handleInvalidRequestParameter(Exception e) {
+        markGateError(ErrorCode.VALIDATION_ERROR);
         return ResponseEntity.status(ErrorCode.VALIDATION_ERROR.httpStatus())
                 .body(ErrorResponse.of(ErrorCode.VALIDATION_ERROR.name(), "요청 파라미터가 올바르지 않습니다."));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleOversizedProductImage(MaxUploadSizeExceededException e) {
+        markGateError(ErrorCode.INVALID_PRODUCT_IMAGE);
         return ResponseEntity.status(ErrorCode.INVALID_PRODUCT_IMAGE.httpStatus())
                 .body(ErrorResponse.of(
                         ErrorCode.INVALID_PRODUCT_IMAGE.name(),
@@ -68,8 +75,20 @@ public class GlobalExceptionHandler {
     /** 내부 상세 정보는 로그에만 남기고, 프론트에는 안전하고 안정적인 코드만 노출한다. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception e) {
-        log.error("처리되지 않은 API 예외", e);
+        markGateError(ErrorCode.INTERNAL_SERVER_ERROR);
+        String requestId = MDC.get(GateRequestLogContext.REQUEST_ID);
+        if (requestId == null) {
+            log.error("처리되지 않은 API 예외", e);
+        } else {
+            log.error("처리되지 않은 API 예외 requestId={}", requestId, e);
+        }
         return ResponseEntity.status(ErrorCode.INTERNAL_SERVER_ERROR.httpStatus())
                 .body(ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR.name(), "서버 내부 오류가 발생했습니다."));
+    }
+
+    private void markGateError(ErrorCode errorCode) {
+        if (MDC.get(GateRequestLogContext.REQUEST_ID) != null) {
+            MDC.put(GateRequestLogContext.ERROR_CODE, errorCode.name());
+        }
     }
 }
